@@ -47,6 +47,9 @@
 
 #include <MySensors.h>
 
+// For STOP mode low-power sleep
+extern "C" void SystemClock_Config(void);
+
 uint32_t SLEEP_TIME = 120000; // Sleep time between reports (in milliseconds)
 // Motion sensor pin - Use PB3 (D19) instead of PA2 (conflicts with ST-Link VCP)
 #define DIGITAL_INPUT_SENSOR PB3
@@ -75,6 +78,35 @@ void presentation()
 	present(CHILD_ID, S_MOTION);
 }
 
+// Forward declaration of MySensors transport functions
+extern void transportSleep(void);
+extern void transportStandBy(void);
+
+// Enter low-power sleep (SLEEP mode with SysTick disabled + radio sleep)
+// Power consumption: ~100-200µA (MCU sleep) + ~0.1µA (RFM69 sleep)
+void enterLowPowerSleep()
+{
+	// Put RFM69 in sleep mode (~0.1µA vs ~1.25mA idle)
+	transportSleep();
+
+	// Disable SysTick to prevent 1ms wake-ups
+	SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;
+
+	// Clear pending EXTI flags
+	EXTI->RPR1 = 0xFFFFFFFF;
+	EXTI->FPR1 = 0xFFFFFFFF;
+
+	// Wait for interrupt (CPU sleeps, peripherals running)
+	while (!motionDetected) {
+		__WFI();
+	}
+
+	// Re-enable SysTick
+	SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
+
+	// Radio will wake automatically on next send()
+}
+
 void loop()
 {
 	// Setup interrupt on first run
@@ -92,15 +124,14 @@ void loop()
 	Serial.println(tripped);
 	send(msg.set(tripped ? "1" : "0"));
 
-	// Clear flag and sleep using direct WFI (bypass MySensors)
+	// Clear flag before sleep
 	motionDetected = false;
-	Serial.println("Sleeping (WFI)...");
+	Serial.println("Sleeping (low power)...");
 	Serial.flush();
+	delay(10);  // Ensure serial is flushed
 
-	// Wait for motion interrupt
-	while (!motionDetected) {
-		__WFI();
-	}
+	// Enter low-power sleep - waits for GPIO interrupt
+	enterLowPowerSleep();
 
 	Serial.println("Woke up!");
 }
