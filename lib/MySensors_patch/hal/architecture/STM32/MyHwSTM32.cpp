@@ -424,9 +424,13 @@ static bool hwSleepInit(void)
 		hrtc.State = HAL_RTC_STATE_READY;
 	}
 
-	// CRITICAL: Enable RTC wakeup interrupt in NVIC
+	// CRITICAL: Enable RTC wakeup interrupt in NVIC and EXTI
 	// Without this, the MCU cannot wake from STOP mode via RTC
 #if defined(STM32U0xx)
+	// STM32U0: Enable EXTI line 28 for wakeup timer
+	__HAL_RTC_WAKEUPTIMER_EXTI_ENABLE_IT();
+	__HAL_RTC_WAKEUPTIMER_EXTI_ENABLE_RISING_EDGE();
+
 	// STM32U0 uses combined RTC_TAMP interrupt
 	HAL_NVIC_SetPriority(RTC_TAMP_IRQn, 0, 0);
 	HAL_NVIC_EnableIRQ(RTC_TAMP_IRQn);
@@ -586,8 +590,11 @@ extern "C" void RTC_Alarm_IRQHandler(void)
 	HAL_RTC_AlarmIRQHandler(&hrtc);
 }
 #elif defined(STM32U0xx)
-// STM32U0: RTC_TAMP interrupt handler provided by STM32RTC library
-// Do not define here to avoid multiple definition conflict
+// STM32U0: Use RTC_TAMP combined interrupt for wakeup
+extern "C" void RTC_TAMP_IRQHandler(void)
+{
+	HAL_RTCEx_WakeUpTimerIRQHandler(&hrtc);
+}
 #else
 // Modern STM32: Use dedicated wake-up timer interrupt
 extern "C" void RTC_WKUP_IRQHandler(void)
@@ -634,20 +641,19 @@ int8_t hwSleep(uint32_t ms)
 	// Suspend SysTick to prevent 1ms interrupts during sleep
 	HAL_SuspendTick();
 
-	// NOTE: USB CDC will disconnect during STOP mode (expected behavior)
-	// USB peripheral requires system clock which is stopped in STOP mode
-	// After wake-up, the host will detect USB disconnect/reconnect
-	// This is normal and unavoidable when using STOP mode sleep
-
-	// Enter SLEEP mode instead of STOP mode for testing
-	// STOP mode: HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
-	HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+	// Enter STOP mode for low power consumption
+#if defined(STM32U0xx)
+	// STM32U0: Use STOP1 mode (~2.5 µA typical, more reliable wake-up)
+	HAL_PWREx_EnterSTOP1Mode(PWR_STOPENTRY_WFI);
+#else
+	HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+#endif
 
 	// ====================================================================
-	// === MCU is in SLEEP mode here, waiting for wake-up ===
+	// === MCU is in STOP mode here, waiting for wake-up ===
 	// ====================================================================
 
-	// After wake-up: restore system clock (defaults to HSI)
+	// After wake-up: restore system clock (defaults to HSI after STOP)
 	hwSleepRestoreSystemClock();
 
 	// Resume SysTick
@@ -732,24 +738,29 @@ int8_t hwSleep(const uint8_t interrupt1, const uint8_t mode1,
 #endif
 	__HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
 
-	// NOTE: Don't suspend SysTick on STM32U0 - it seems to affect EXTI wake-up
-	// HAL_SuspendTick();
+	// Suspend SysTick to prevent 1ms interrupts during sleep
+	HAL_SuspendTick();
 
 	// NOTE: USB CDC will disconnect during STOP mode (expected behavior)
 	// See note in timer-only hwSleep() variant above
 
-	// Use direct WFI instead of HAL function for testing
-	__WFI();
+	// Enter STOP mode for low power consumption
+#if defined(STM32U0xx)
+	// STM32U0: Use STOP1 mode (~2.5 µA typical, more reliable wake-up)
+	HAL_PWREx_EnterSTOP1Mode(PWR_STOPENTRY_WFI);
+#else
+	HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+#endif
 
 	// ====================================================================
-	// === MCU is in STOP mode here (10-50 µA), waiting for wake-up ===
+	// === MCU is in STOP mode here (~2.5 µA), waiting for wake-up ===
 	// ====================================================================
 
-	// After wake-up: restore system clock (not needed for simple WFI)
-	// hwSleepRestoreSystemClock();
+	// After wake-up: restore system clock (defaults to HSI after STOP)
+	hwSleepRestoreSystemClock();
 
-	// Resume SysTick (not needed if we didn't suspend it)
-	// HAL_ResumeTick();
+	// Resume SysTick
+	HAL_ResumeTick();
 
 	// CRITICAL: Clear wakeup flags after wake-up
 #if defined(STM32F1xx)

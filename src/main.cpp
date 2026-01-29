@@ -18,120 +18,180 @@
  *
  *******************************
  *
- * REVISION HISTORY
- * Version 1.0 - Henrik Ekblad
- *
  * DESCRIPTION
- * Motion Sensor example using HC-SR501
- * http://www.mysensors.org/build/motion
+ * Temperature/Humidity sensor using HDC1080 with battery monitoring
+ * for STM32U083RC
  *
  */
 
-// Enable debug prints
+// Enable debug prints (comment out for lowest power)
 #define MY_DEBUG
 #define MY_SPLASH_SCREEN_DISABLED
-#define MY_SMART_SLEEP_WAIT_DURATION_MS 0  // Disable smart sleep wait
-#define MY_SLEEP_TRANSPORT_RECONNECT_TIMEOUT_MS 0  // Don't sleep during reconnect
+// #define MY_DISABLED_SERIAL  // Disable serial for lowest power consumption
+#define MY_SMART_SLEEP_WAIT_DURATION_MS 0
+#define MY_SLEEP_TRANSPORT_RECONNECT_TIMEOUT_MS 0
 
 // Enable and select radio type attached
-#define MY_RADIO_RFM69          // Radio-Typ
-#define MY_RFM69_NEW_DRIVER     // Neuen Driver verwenden (empfohlen)
-#define MY_IS_RFM69HW           // Für die HW-Version (High Power)
-#define MY_RFM69_FREQUENCY RFM69_868MHZ  // Oder 433MHZ, je nach Modul
+#define MY_RADIO_RFM69
+#define MY_RFM69_NEW_DRIVER
+#define MY_IS_RFM69HW
+#define MY_RFM69_FREQUENCY RFM69_868MHZ
 #define MY_RFM69_TX_POWER_DBM (6)
-#define MY_RFM69_CS_PIN PB6    // Falls nicht Standard-SS
-#define MY_RFM69_IRQ_PIN PA10    // Interrupt-Pin
+#define MY_RFM69_CS_PIN PB6
+#define MY_RFM69_IRQ_PIN PA10
 #define MY_RFM69_IRQ_NUM PA10
-#define MY_NODE_ID 11          // Feste Node-ID (optional)
-#define MY_RFM69_SPI_SPEED (1*1000000ul)	// datasheet says 10Mhz max.
+#define MY_NODE_ID 11
+#define MY_RFM69_SPI_SPEED (1*1000000ul)
 
 #include <MySensors.h>
+#include <Wire.h>
+#include "ClosedCube_HDC1080.h"
 
-// For STOP mode low-power sleep
-extern "C" void SystemClock_Config(void);
+// I2C2 pins for HDC1080
+#define I2C2_SDA_PIN PB11
+#define I2C2_SCL_PIN PB10
 
-uint32_t SLEEP_TIME = 120000; // Sleep time between reports (in milliseconds)
-// Motion sensor pin - Use PB3 (D19) instead of PA2 (conflicts with ST-Link VCP)
-#define DIGITAL_INPUT_SENSOR PB3
-#define CHILD_ID 1   // Id of the sensor child
+// Sleep interval between reports (in milliseconds)
+#define SLEEP_TIME 10000  // 10 seconds for testing
 
-// Initialize motion message
-MyMessage msg(CHILD_ID, V_TRIPPED);
+// Child IDs
+#define CHILD_ID_TEMP 0
+#define CHILD_ID_HUM 1
+#define CHILD_ID_BATT 2
 
-volatile bool motionDetected = false;
+// Battery voltage ADC pin
+#define BATTERY_ADC_PIN PA0
+// Voltage divider ratio (if using one) - adjust based on your circuit
+// For direct connection to battery (max 3.3V): set to 1.0
+// For voltage divider (e.g., 100k/100k for max 6.6V): set to 2.0
+#define VOLTAGE_DIVIDER_RATIO 2.0
+// ADC reference voltage
+#define ADC_REF_VOLTAGE 3.3
+// ADC resolution (12-bit = 4096)
+#define ADC_MAX_VALUE 4095
 
-void motionISR() {
-	motionDetected = true;
-}
+// HDC1080 sensor
+ClosedCube_HDC1080 hdc1080;
+
+// MySensors messages
+MyMessage msgTemp(CHILD_ID_TEMP, V_TEMP);
+MyMessage msgHum(CHILD_ID_HUM, V_HUM);
+MyMessage msgBatt(CHILD_ID_BATT, V_VOLTAGE);
+
 
 void setup()
 {
-	// Empty - attach interrupt in loop instead
+	// Early debug - before MySensors init
+	Serial.begin(115200);
+	delay(100);
+	Serial.println("\n\n=== BOOT ===");
+	Serial.flush();
+
+#ifndef MY_DISABLED_SERIAL
+	// Print actual clock speed for debugging
+	Serial.print("System clock: ");
+	Serial.print(HAL_RCC_GetSysClockFreq() / 1000000);
+	Serial.println(" MHz");
+#endif
+
+	// Initialize I2C2 (PB10=SCL, PB11=SDA)
+	Wire.setSCL(I2C2_SCL_PIN);
+	Wire.setSDA(I2C2_SDA_PIN);
+	Wire.begin();
+
+	// Initialize HDC1080
+	hdc1080.begin(0x40);
+
+	// Configure battery ADC pin
+	pinMode(BATTERY_ADC_PIN, INPUT_ANALOG);
+
+#ifndef MY_DISABLED_SERIAL
+	Serial.println("HDC1080 + Battery sensor ready");
+#endif
 }
 
 void presentation()
 {
-	// Send the sketch version information to the gateway and Controller
-	sendSketchInfo("Motion Sensor", "1.0");
+	sendSketchInfo("TempHum Battery Node", "1.0");
 
-	// Register all sensors to gw (they will be created as child devices)
-	present(CHILD_ID, S_MOTION);
+	present(CHILD_ID_TEMP, S_TEMP);
+	present(CHILD_ID_HUM, S_HUM);
+	present(CHILD_ID_BATT, S_MULTIMETER);
 }
 
-// Forward declaration of MySensors transport functions
-extern void transportSleep(void);
-extern void transportStandBy(void);
-
-// Enter low-power sleep (SLEEP mode with SysTick disabled + radio sleep)
-// Power consumption: ~100-200µA (MCU sleep) + ~0.1µA (RFM69 sleep)
-void enterLowPowerSleep()
+float readBatteryVoltage()
 {
-	// Put RFM69 in sleep mode (~0.1µA vs ~1.25mA idle)
-	transportSleep();
+	// Read ADC value (average of multiple readings for stability)
+	uint32_t adcSum = 0;
+	const int numReadings = 10;
 
-	// Disable SysTick to prevent 1ms wake-ups
-	SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;
-
-	// Clear pending EXTI flags
-	EXTI->RPR1 = 0xFFFFFFFF;
-	EXTI->FPR1 = 0xFFFFFFFF;
-
-	// Wait for interrupt (CPU sleeps, peripherals running)
-	while (!motionDetected) {
-		__WFI();
+	for (int i = 0; i < numReadings; i++) {
+		adcSum += analogRead(BATTERY_ADC_PIN);
+		delay(1);
 	}
 
-	// Re-enable SysTick
-	SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
+	float adcValue = (float)adcSum / numReadings;
 
-	// Radio will wake automatically on next send()
+	// Convert to voltage
+	float voltage = (adcValue / ADC_MAX_VALUE) * ADC_REF_VOLTAGE * VOLTAGE_DIVIDER_RATIO;
+
+	return voltage;
+}
+
+uint8_t voltageToBatteryPercent(float voltage)
+{
+	// Assuming Li-Ion/LiPo battery: 3.0V = 0%, 4.2V = 100%
+	// Adjust these values based on your battery type
+	const float minVoltage = 3.0;
+	const float maxVoltage = 4.2;
+
+	if (voltage <= minVoltage) return 0;
+	if (voltage >= maxVoltage) return 100;
+
+	return (uint8_t)(((voltage - minVoltage) / (maxVoltage - minVoltage)) * 100);
 }
 
 void loop()
 {
-	// Setup interrupt on first run
-	static bool interruptAttached = false;
-	if (!interruptAttached) {
-		interruptAttached = true;
-		pinMode(DIGITAL_INPUT_SENSOR, INPUT);
-		attachInterrupt(digitalPinToInterrupt(DIGITAL_INPUT_SENSOR), motionISR, CHANGE);
-		Serial.println("Interrupt ready on PB3");
-	}
+	// Read HDC1080 sensor
+	float temperature = hdc1080.readTemperature();
+	float humidity = hdc1080.readHumidity();
 
-	// Read and send motion state
-	bool tripped = digitalRead(DIGITAL_INPUT_SENSOR) == HIGH;
-	Serial.print("Motion: ");
-	Serial.println(tripped);
-	send(msg.set(tripped ? "1" : "0"));
+	// Read battery voltage
+	float batteryVoltage = readBatteryVoltage();
+	uint8_t batteryPercent = voltageToBatteryPercent(batteryVoltage);
 
-	// Clear flag before sleep
-	motionDetected = false;
-	Serial.println("Sleeping (low power)...");
+	// Print to serial
+	Serial.print("Temp: ");
+	Serial.print(temperature, 1);
+	Serial.print("C, Hum: ");
+	Serial.print(humidity, 1);
+	Serial.print("%, Batt: ");
+	Serial.print(batteryVoltage, 2);
+	Serial.print("V (");
+	Serial.print(batteryPercent);
+	Serial.println("%)");
+
+	// Send to gateway
+	Serial.println("Sending to gateway...");
+	bool ok1 = send(msgTemp.set(temperature, 1));
+	bool ok2 = send(msgHum.set(humidity, 1));
+	bool ok3 = send(msgBatt.set(batteryVoltage, 2));
+	Serial.print("Send results: T=");
+	Serial.print(ok1);
+	Serial.print(" H=");
+	Serial.print(ok2);
+	Serial.print(" B=");
+	Serial.println(ok3);
+
+	// Also send battery level to controller
+	sendBatteryLevel(batteryPercent);
+
+	// Enter low power sleep (MCU STOP mode + radio sleep)
+	Serial.println("Sleeping...");
 	Serial.flush();
-	delay(10);  // Ensure serial is flushed
 
-	// Enter low-power sleep - waits for GPIO interrupt
-	enterLowPowerSleep();
+	sleep(SLEEP_TIME);
 
-	Serial.println("Woke up!");
+	Serial.println("Woke up");
 }
