@@ -6,7 +6,10 @@
     "f_cpu": "4000000L",
     "mcu": "stm32u083rctx",
     "product_line": "STM32U083xx",
-    "variant": "STM32U0xx/U073R(8-B-C)(I-T)_U083RC(I-T)"
+    "variant": "STM32U0xx/U073R(8-B-C)(I-T)_U083RC(I-T)",
+    "arduino": {
+      "variant_h": "variant_NUCLEO_U083RC.h"
+    }
   },
   "debug": {
     "default_tools": [
