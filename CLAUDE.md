@@ -29,7 +29,7 @@ pio run -t clean
 The `lib/MySensors_patch/` directory contains patched MySensors library files. PlatformIO's library dependency finder (LDF) loads these patches **before** the upstream MySensors library because local `lib/` has higher priority. The `library.json` marks it as a valid PlatformIO library.
 
 Key patches:
-- `hal/architecture/STM32/MyHwSTM32.cpp` - Complete STM32 hardware abstraction with low-power STOP mode sleep, RTC wake-up timer, GPIO interrupt wake-up, EEPROM emulation
+- `hal/architecture/STM32/MyHwSTM32.cpp` - Complete STM32 hardware abstraction with low-power STOP mode sleep, RTC Alarm-based wake-up (uses STM32RTC library), GPIO interrupt wake-up, EEPROM emulation
 - `hal/architecture/STM32/MyHwSTM32.h` - Header for the STM32 HAL implementation
 - `hal/crypto/generic/drivers/AES/AES.h` - Fixes macro conflict between STM32 HAL's `AES` peripheral definition and MySensors' `AES` class (lines 39-41: `#ifdef AES #undef AES`)
 
@@ -64,18 +64,20 @@ Battery ADC: PA0
 ### Sleep Mode
 
 The HAL implements true low-power sleep using STM32 STOP1 mode. The `hwSleep()` functions in MyHwSTM32.cpp:
-1. Initialize RTC with LSI (32 kHz internal oscillator) - no external crystal needed
-2. Configure RTC wake-up timer using RTCCLK/16 (~2000 Hz, max ~32 seconds per sleep)
+1. Initialize RTC via STM32RTC library with LSI clock (32 kHz internal oscillator)
+2. Configure RTC Alarm A for timed wake-up (adds sleep duration to current time)
 3. Disable peripheral clocks (SPI1, I2C1/2, ADC) before entering STOP
 4. Enter STOP mode with low-power regulator via `HAL_PWR_EnterSTOPMode()`
 5. On wake: call `SystemClock_Config()` to restore clocks from HSI, re-enable peripherals
 
-Wake-up sources: RTC timer or GPIO interrupts (for radio IRQ).
+Wake-up sources: RTC Alarm A or GPIO interrupts (for radio IRQ).
 
 **STM32U0-specific sleep details:**
-- RTC wake-up uses EXTI line 28 (direct event, configured in IMR1)
+- **IMPORTANT**: The RTC wake-up timer (WUTF) on STM32U0 does NOT work - the counter never decrements. This implementation uses RTC Alarm A instead, which works reliably.
+- RTC Alarm uses EXTI line 17 (rising edge trigger)
 - Internal wake-up line enabled via `PWR->CR3 |= PWR_CR3_EIWUL`
 - Debug is disabled during sleep (`DBGMCU->CR = 0`) to allow true low power
+- Uses STM32RTC library for simplified RTC management
 
 ### MySensors Configuration
 

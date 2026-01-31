@@ -1,0 +1,7 @@
+{
+  "name": "MySensors_patch",
+  "version": "1.0.0",
+  "description": "STM32U0 HAL patches for MySensors",
+  "frameworks": "arduino",
+  "platforms": "ststm32"
+}
