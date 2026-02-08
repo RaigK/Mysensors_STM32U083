@@ -44,9 +44,13 @@ The STM32U0 series requires workarounds defined in `platformio.ini`:
 ### Custom Board Definition
 
 `boards/stm32u083rc.json` defines:
-- Cortex-M0+ at 4MHz default clock (for low power)
+- Cortex-M0+ at 4MHz default clock (overridden by `SystemClock_Config()`)
 - 256KB flash, 40KB RAM
 - Uses variant `STM32U0xx/U073R(8-B-C)(I-T)_U083RC(I-T)` from STM32duino core
+
+The `SystemClock_Config()` in `src/main.cpp` configures the actual runtime clock based on `MY_STM32_RUN_MODE`:
+- **Normal**: 16 MHz HSI, voltage scale 2
+- **Low Power Run**: 2 MHz MSI, LP regulator enabled
 
 ### Pin Configuration
 
@@ -61,23 +65,49 @@ Battery ADC: PA0
 
 ## Key Implementation Details
 
-### Sleep Mode
+### Power Mode Configuration
 
-The HAL implements true low-power sleep using STM32 STOP1 mode. The `hwSleep()` functions in MyHwSTM32.cpp:
-1. Initialize RTC via STM32RTC library with LSI clock (32 kHz internal oscillator)
-2. Configure RTC Alarm A for timed wake-up (adds sleep duration to current time)
-3. Disable peripheral clocks (SPI1, I2C1/2, ADC) before entering STOP
-4. Enter STOP mode with low-power regulator via `HAL_PWR_EnterSTOPMode()`
-5. On wake: call `SystemClock_Config()` to restore clocks from HSI, re-enable peripherals
+Compile-time defines in `src/main.cpp` select run and sleep modes. Include `stm32_power_config.h` after setting defines.
+
+**Run Modes** (`MY_STM32_RUN_MODE`):
+| Mode | Clock | Current | Use Case |
+|------|-------|---------|----------|
+| `POWER_RUN_NORMAL` | 16 MHz HSI | ~3-5 mA | Normal operation, fast processing |
+| `POWER_RUN_LOW_POWER` | 2 MHz MSI | ~200-500 µA | Battery operation, slow processing OK |
+
+**Sleep Modes** (`MY_STM32_SLEEP_MODE`):
+| Mode | Current | Wake Sources | Notes |
+|------|---------|--------------|-------|
+| `POWER_SLEEP_SLEEP` | ~1 mA | Any interrupt | Fast wake, peripherals on |
+| `POWER_SLEEP_LP_SLEEP` | ~100-200 µA | Any interrupt | Requires LPR mode |
+| `POWER_SLEEP_STOP0` | ~10-20 µA | RTC, EXTI | Fast wake-up |
+| `POWER_SLEEP_STOP1` | ~5-10 µA | RTC, EXTI | Default, good balance |
+| `POWER_SLEEP_STOP2` | ~1-3 µA | RTC, EXTI | Lowest Stop power |
+| `POWER_SLEEP_STANDBY` | ~300 nA | RTC, WKUP pins | RAM lost, system resets |
+
+Example configuration:
+```cpp
+#define MY_STM32_RUN_MODE    POWER_RUN_LOW_POWER   // 2 MHz for battery life
+#define MY_STM32_SLEEP_MODE  POWER_SLEEP_STOP2     // Lowest practical power
+#include "stm32_power_config.h"
+```
+
+### Sleep Implementation Details
+
+The `hwSleep()` functions in `MyHwSTM32.cpp` handle all sleep modes:
+1. Initialize RTC via STM32RTC library with LSI clock (32 kHz)
+2. Configure RTC Alarm A for timed wake-up
+3. Call `hwPrepareSleep()` to disable peripheral clocks (SPI1, I2C1/2, ADC)
+4. Call `hwEnterSleepMode()` which selects mode based on `MY_STM32_SLEEP_MODE`
+5. On wake: restore clocks via `SystemClock_Config()`, re-enable peripherals
 
 Wake-up sources: RTC Alarm A or GPIO interrupts (for radio IRQ).
 
-**STM32U0-specific sleep details:**
-- **IMPORTANT**: The RTC wake-up timer (WUTF) on STM32U0 does NOT work - the counter never decrements. This implementation uses RTC Alarm A instead, which works reliably.
+**STM32U0-specific notes:**
+- **IMPORTANT**: RTC wake-up timer (WUTF) does NOT work on STM32U0 - use RTC Alarm A instead
 - RTC Alarm uses EXTI line 17 (rising edge trigger)
-- Internal wake-up line enabled via `PWR->CR3 |= PWR_CR3_EIWUL`
-- Debug is disabled during sleep (`DBGMCU->CR = 0`) to allow true low power
-- Uses STM32RTC library for simplified RTC management
+- Internal wake-up line: `PWR->CR3 |= PWR_CR3_EIWUL`
+- Debug disabled during sleep: `DBGMCU->CR = 0`
 
 ### MySensors Configuration
 

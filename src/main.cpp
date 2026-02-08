@@ -24,10 +24,18 @@
  *
  */
 
+// ======================== Power Mode Configuration ========================
+// Run modes: POWER_RUN_NORMAL (16 MHz), POWER_RUN_LOW_POWER (2 MHz)
+// Sleep modes: POWER_SLEEP_SLEEP, POWER_SLEEP_LP_SLEEP, POWER_SLEEP_STOP0,
+//              POWER_SLEEP_STOP1, POWER_SLEEP_STOP2, POWER_SLEEP_STANDBY
+#define MY_STM32_RUN_MODE    POWER_RUN_LOW_POWER   // Low Power Run 2 MHz
+#define MY_STM32_SLEEP_MODE  POWER_SLEEP_STOP2     // Stop 2 mode (~1-3 µA)
+#include "stm32_power_config.h"
+
 // Enable debug prints (comment out for lowest power)
-#define MY_DEBUG
+// #define MY_DEBUG
 #define MY_SPLASH_SCREEN_DISABLED
-// #define MY_DISABLED_SERIAL  // Disable serial for lowest power consumption
+#define MY_DISABLED_SERIAL  // Disable serial for lowest power consumption
 #define MY_SMART_SLEEP_WAIT_DURATION_MS 0
 #define MY_SLEEP_TRANSPORT_RECONNECT_TIMEOUT_MS 0
 
@@ -78,14 +86,54 @@ MyMessage msgTemp(CHILD_ID_TEMP, V_TEMP);
 MyMessage msgHum(CHILD_ID_HUM, V_HUM);
 MyMessage msgBatt(CHILD_ID_BATT, V_VOLTAGE);
 
-// Custom low-power system clock configuration (16 MHz HSI, no PLL)
-// This overrides the default 56 MHz PLL configuration for lower power consumption
+// Custom system clock configuration with power mode support
+// Supports: Normal Run (16 MHz HSI) or Low Power Run (2 MHz MSI)
 extern "C" void SystemClock_Config(void)
 {
 	RCC_OscInitTypeDef RCC_OscInitStruct = {};
 	RCC_ClkInitTypeDef RCC_ClkInitStruct = {};
 
-	// Use voltage scaling range 2 for lower power (valid up to 16 MHz)
+#if MY_STM32_RUN_MODE == POWER_RUN_LOW_POWER
+	// ==================== Low Power Run Mode (2 MHz MSI) ====================
+	// Exit Low Power Run mode first if we're in it (required before clock changes)
+	if (READ_BIT(PWR->SR2, PWR_SR2_REGLPF)) {
+		HAL_PWREx_DisableLowPowerRunMode();
+	}
+
+	// Voltage scaling range 2 (required for LPR, valid up to 16 MHz)
+	HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE2);
+
+	// Enable MSI at 2 MHz (range 5) and LSI for RTC
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI | RCC_OSCILLATORTYPE_LSI;
+	RCC_OscInitStruct.MSIState = RCC_MSI_ON;
+	RCC_OscInitStruct.MSICalibrationValue = RCC_MSICALIBRATION_DEFAULT;
+	RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_5;  // 2 MHz
+	RCC_OscInitStruct.LSIState = RCC_LSI_ON;
+	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_OFF;
+	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+		Error_Handler();
+	}
+
+	// Use MSI as system clock (2 MHz)
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1;
+	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_MSI;
+	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK) {
+		Error_Handler();
+	}
+
+	// Enter Low Power Run mode (must be ≤ 2 MHz)
+	HAL_PWREx_EnableLowPowerRunMode();
+
+#else
+	// ==================== Normal Run Mode (16 MHz HSI) ====================
+	// Exit Low Power Run mode if we're in it (after STOP wake-up)
+	if (READ_BIT(PWR->SR2, PWR_SR2_REGLPF)) {
+		HAL_PWREx_DisableLowPowerRunMode();
+	}
+
+	// Voltage scaling range 2 for lower power (valid up to 16 MHz)
 	HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE2);
 
 	// Enable HSI (16 MHz) and LSI (for RTC)
@@ -106,6 +154,7 @@ extern "C" void SystemClock_Config(void)
 	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK) {
 		Error_Handler();
 	}
+#endif
 }
 
 void setup()
@@ -117,10 +166,16 @@ void setup()
 	Serial.flush();
 
 #ifndef MY_DISABLED_SERIAL
-	// Print actual clock speed for debugging
+	// Print actual clock speed and power mode info
 	Serial.print("System clock: ");
 	Serial.print(HAL_RCC_GetSysClockFreq() / 1000000);
 	Serial.println(" MHz");
+#if POWER_DEBUG_ENABLED
+	Serial.print("Run mode: ");
+	Serial.println(power_run_mode_name());
+	Serial.print("Sleep mode: ");
+	Serial.println(power_sleep_mode_name());
+#endif
 #endif
 
 	// Initialize I2C2 (PB10=SCL, PB11=SDA)

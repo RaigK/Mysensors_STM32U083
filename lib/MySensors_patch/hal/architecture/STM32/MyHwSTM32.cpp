@@ -55,6 +55,27 @@
 #include "MyHwSTM32.h"
 #include <STM32RTC.h>
 
+// Include power configuration if available
+#if __has_include("stm32_power_config.h")
+#include "stm32_power_config.h"
+#else
+// Default power mode configuration
+#define POWER_RUN_NORMAL      0
+#define POWER_RUN_LOW_POWER   1
+#define POWER_SLEEP_SLEEP     0
+#define POWER_SLEEP_LP_SLEEP  1
+#define POWER_SLEEP_STOP0     2
+#define POWER_SLEEP_STOP1     3
+#define POWER_SLEEP_STOP2     4
+#define POWER_SLEEP_STANDBY   5
+#ifndef MY_STM32_RUN_MODE
+#define MY_STM32_RUN_MODE     POWER_RUN_NORMAL
+#endif
+#ifndef MY_STM32_SLEEP_MODE
+#define MY_STM32_SLEEP_MODE   POWER_SLEEP_STOP1
+#endif
+#endif
+
 // Sleep mode state variables
 static volatile uint8_t _wokeUpByInterrupt = INVALID_INTERRUPT_NUM;
 static volatile uint8_t _wakeUp1Interrupt = INVALID_INTERRUPT_NUM;
@@ -77,6 +98,9 @@ static void alarmCallback(void *data)
 static bool hwSleepInit(void);
 static bool hwSleepConfigureAlarm(uint32_t ms);
 static void hwSleepRestoreSystemClock(void);
+static void hwEnterSleepMode(void);
+static void hwPrepareSleep(void);
+static void hwRestoreAfterSleep(void);
 static void wakeUp1ISR(void);
 static void wakeUp2ISR(void);
 
@@ -371,6 +395,224 @@ static void hwSleepRestoreSystemClock(void)
 }
 
 /**
+ * @brief Configure unused GPIOs as analog to minimize leakage current
+ * @note Pins in use are preserved, all others set to analog mode
+ */
+static void hwConfigureGpioLowPower(void)
+{
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+
+	// Enable all GPIO clocks for configuration
+	__HAL_RCC_GPIOA_CLK_ENABLE();
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+	__HAL_RCC_GPIOC_CLK_ENABLE();
+	__HAL_RCC_GPIOD_CLK_ENABLE();
+
+	// PORTA: Keep PA0 (ADC), PA2/PA3 (USART), PA5/PA6/PA7 (SPI), PA10 (RFM69 IRQ)
+	// Set unused: PA1, PA4, PA8, PA9, PA11, PA12, PA13, PA14, PA15
+	// Note: PA13/PA14 are SWDIO/SWCLK - setting to analog disables debug!
+#ifndef MY_DEBUG
+	// Only disable debug pins if debug is off
+	GPIO_InitStruct.Pin = GPIO_PIN_1 | GPIO_PIN_4 | GPIO_PIN_8 | GPIO_PIN_9 |
+	                      GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
+#else
+	// Keep PA13/PA14 for debug
+	GPIO_InitStruct.Pin = GPIO_PIN_1 | GPIO_PIN_4 | GPIO_PIN_8 | GPIO_PIN_9 |
+	                      GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_15;
+#endif
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	// PORTB: Keep PB6 (RFM69 CS), PB10/PB11 (I2C2)
+	// Set unused: PB0, PB1, PB2, PB3, PB4, PB5, PB7, PB8, PB9, PB12-PB15
+	GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 |
+	                      GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_7 | GPIO_PIN_8 |
+	                      GPIO_PIN_9 | GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+	// PORTC: All unused (PC13 is often user button, PC14/PC15 are LSE if used)
+	GPIO_InitStruct.Pin = GPIO_PIN_All;
+	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+	// PORTD: All unused
+	GPIO_InitStruct.Pin = GPIO_PIN_All;
+	HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+	// Disable GPIO clocks for unused ports
+	__HAL_RCC_GPIOC_CLK_DISABLE();
+	__HAL_RCC_GPIOD_CLK_DISABLE();
+}
+
+/**
+ * @brief Prepare peripherals for sleep (disable clocks)
+ */
+static void hwPrepareSleep(void)
+{
+	// Configure unused GPIOs as analog to reduce leakage
+	hwConfigureGpioLowPower();
+
+	// Disable peripheral clocks for lower power
+	__HAL_RCC_SPI1_CLK_DISABLE();
+	__HAL_RCC_I2C1_CLK_DISABLE();
+	__HAL_RCC_I2C2_CLK_DISABLE();
+	__HAL_RCC_ADC_CLK_DISABLE();
+
+#if defined(STM32U0xx)
+	// Disable debug during sleep (DBGMCU keeps clocks running)
+	DBGMCU->CR = 0;
+
+	// Enable EXTI line 17 for RTC Alarm wake-up
+	// On STM32U0, RTC Alarm is on EXTI line 17 (rising edge)
+	EXTI->IMR1 |= (1UL << 17);   // Interrupt mask
+	EXTI->RTSR1 |= (1UL << 17);  // Rising edge trigger
+	EXTI->RPR1 = (1UL << 17);    // Clear pending
+
+	// Enable Internal Wake-up Line for RTC
+	PWR->CR3 |= PWR_CR3_EIWUL;
+#endif
+}
+
+/**
+ * @brief Restore peripherals after wake-up
+ */
+static void hwRestoreAfterSleep(void)
+{
+	// Re-enable GPIO clocks
+	__HAL_RCC_GPIOA_CLK_ENABLE();
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+
+	// Re-enable peripheral clocks
+	__HAL_RCC_SPI1_CLK_ENABLE();
+	__HAL_RCC_I2C1_CLK_ENABLE();
+	__HAL_RCC_I2C2_CLK_ENABLE();
+	__HAL_RCC_ADC_CLK_ENABLE();
+
+	// Reinitialize SPI1 pins (PA5=SCK, PA6=MISO, PA7=MOSI)
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7;
+	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+	GPIO_InitStruct.Alternate = GPIO_AF0_SPI1;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	// Reinitialize RFM69 CS pin (PB6)
+	GPIO_InitStruct.Pin = GPIO_PIN_6;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);  // CS high (inactive)
+
+	// Reinitialize RFM69 IRQ pin (PA10)
+	GPIO_InitStruct.Pin = GPIO_PIN_10;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	// Reinitialize I2C2 pins (PB10=SCL, PB11=SDA)
+	GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_11;
+	GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+	GPIO_InitStruct.Pull = GPIO_PULLUP;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+	GPIO_InitStruct.Alternate = GPIO_AF6_I2C2;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+	// Reinitialize ADC pin (PA0)
+	GPIO_InitStruct.Pin = GPIO_PIN_0;
+	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+}
+
+/**
+ * @brief Enter the configured sleep mode
+ * @note Sleep mode is selected at compile time via MY_STM32_SLEEP_MODE
+ */
+static void hwEnterSleepMode(void)
+{
+#if MY_STM32_SLEEP_MODE == POWER_SLEEP_SLEEP
+	// ==================== Sleep Mode ====================
+	// CPU halted, peripherals running, fast wake-up
+	// Current: ~1 mA (varies with peripherals enabled)
+	HAL_SuspendTick();
+	HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+	HAL_ResumeTick();
+
+#elif MY_STM32_SLEEP_MODE == POWER_SLEEP_LP_SLEEP
+	// ==================== Low Power Sleep Mode ====================
+	// Requires Low Power Run mode (2 MHz MSI)
+	// CPU halted, LP regulator, limited peripherals
+	// Current: ~100-200 µA
+	HAL_SuspendTick();
+	HAL_PWR_EnterSLEEPMode(PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+	HAL_ResumeTick();
+
+#elif MY_STM32_SLEEP_MODE == POWER_SLEEP_STOP0
+	// ==================== Stop 0 Mode ====================
+	// Fast wake-up, SRAM retained
+	// Current: ~10-20 µA
+	HAL_SuspendTick();
+#if defined(STM32U0xx)
+	HAL_PWREx_EnterSTOP0Mode(PWR_STOPENTRY_WFI);
+#else
+	HAL_PWR_EnterSTOPMode(PWR_MAINREGULATOR_ON, PWR_STOPENTRY_WFI);
+#endif
+	hwSleepRestoreSystemClock();
+	HAL_ResumeTick();
+
+#elif MY_STM32_SLEEP_MODE == POWER_SLEEP_STOP1
+	// ==================== Stop 1 Mode (Default) ====================
+	// Lower power, LP regulator
+	// Current: ~5-10 µA
+	HAL_SuspendTick();
+#if defined(STM32U0xx)
+	HAL_PWREx_EnterSTOP1Mode(PWR_STOPENTRY_WFI);
+#else
+	HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+#endif
+	hwSleepRestoreSystemClock();
+	HAL_ResumeTick();
+
+#elif MY_STM32_SLEEP_MODE == POWER_SLEEP_STOP2
+	// ==================== Stop 2 Mode ====================
+	// Lowest Stop power, limited peripherals
+	// Current: ~1-3 µA
+	HAL_SuspendTick();
+#if defined(STM32U0xx)
+	HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
+#else
+	// Fallback to Stop 1 if Stop 2 not available
+	HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+#endif
+	hwSleepRestoreSystemClock();
+	HAL_ResumeTick();
+
+#elif MY_STM32_SLEEP_MODE == POWER_SLEEP_STANDBY
+	// ==================== Standby Mode ====================
+	// Lowest power, RAM lost, only RTC/IWDG preserved
+	// Current: ~300 nA
+	// WARNING: System will reset on wake-up!
+#if defined(STM32U0xx)
+	// Enable WKUP pin if needed (e.g., PA0)
+	// HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN1);
+	HAL_PWR_EnterSTANDBYMode();
+#else
+	HAL_PWR_EnterSTANDBYMode();
+#endif
+	// Will not reach here - system resets on wake
+
+#else
+	// Default fallback to Stop 1
+	HAL_SuspendTick();
+	HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+	hwSleepRestoreSystemClock();
+	HAL_ResumeTick();
+#endif
+}
+
+/**
  * @brief ISR for wake-up interrupt 1
  */
 static void wakeUp1ISR(void)
@@ -402,7 +644,10 @@ int8_t hwSleep(uint32_t ms)
 	Serial.flush();
 #endif
 
-	// Initialize RTC if needed
+	// Sleep/LP Sleep modes don't need RTC for timed wake-up with short durations
+	// but we use RTC alarm for consistent behavior across all modes
+#if MY_STM32_SLEEP_MODE != POWER_SLEEP_STANDBY
+	// Initialize RTC if needed (not needed for Standby with WKUP pin only)
 	if (!rtcInitialized) {
 		if (!hwSleepInit()) {
 #if !defined(MY_DISABLED_SERIAL)
@@ -421,6 +666,7 @@ int8_t hwSleep(uint32_t ms)
 			return MY_SLEEP_NOT_POSSIBLE;
 		}
 	}
+#endif
 
 	// Reset sleep remaining
 	sleepRemainingMs = 0ul;
@@ -433,53 +679,26 @@ int8_t hwSleep(uint32_t ms)
 	delay(10);
 #endif
 
-	// Disable peripheral clocks for lower power
-	__HAL_RCC_SPI1_CLK_DISABLE();
-	__HAL_RCC_I2C1_CLK_DISABLE();
-	__HAL_RCC_I2C2_CLK_DISABLE();
-	__HAL_RCC_ADC_CLK_DISABLE();
+	// Prepare peripherals for sleep
+	hwPrepareSleep();
 
-#if defined(STM32U0xx)
-	// Disable debug during sleep (DBGMCU keeps clocks running)
-	DBGMCU->CR = 0;
-
-	// Enable EXTI line 17 for RTC Alarm wake-up
-	// On STM32U0, RTC Alarm is on EXTI line 17 (rising edge)
-	EXTI->IMR1 |= (1UL << 17);   // Interrupt mask
-	EXTI->RTSR1 |= (1UL << 17);  // Rising edge trigger
-	EXTI->RPR1 = (1UL << 17);    // Clear pending
-
-	// Enable Internal Wake-up Line for RTC
-	PWR->CR3 |= PWR_CR3_EIWUL;
-#endif
-
-	// Suspend SysTick before entering STOP
-	HAL_SuspendTick();
-
-	// Enter STOP mode (low-power regulator, wake on interrupt)
-	HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+	// Enter the configured sleep mode
+	hwEnterSleepMode();
 
 	// ========== WOKE UP ==========
 
-	// Restore system clock (STOP mode reverts to HSI)
-	hwSleepRestoreSystemClock();
-
-	// Resume SysTick
-	HAL_ResumeTick();
-
-	// Re-enable peripheral clocks
-	__HAL_RCC_SPI1_CLK_ENABLE();
-	__HAL_RCC_I2C1_CLK_ENABLE();
-	__HAL_RCC_I2C2_CLK_ENABLE();
-	__HAL_RCC_ADC_CLK_ENABLE();
+	// Restore peripherals
+	hwRestoreAfterSleep();
 
 #if !defined(MY_DISABLED_SERIAL)
 	Serial.println("Woke");
 	Serial.flush();
 #endif
 
+#if MY_STM32_SLEEP_MODE != POWER_SLEEP_STANDBY
 	// Disable alarm after wake-up
 	rtc.disableAlarm(STM32RTC::ALARM_A);
+#endif
 
 	return alarmTriggered ? MY_WAKE_UP_BY_TIMER : MY_WAKE_UP_BY_TIMER;
 }
@@ -503,6 +722,7 @@ int8_t hwSleep(const uint8_t interrupt1, const uint8_t mode1,
 	Serial.flush();
 #endif
 
+#if MY_STM32_SLEEP_MODE != POWER_SLEEP_STANDBY
 	// Initialize RTC if needed
 	if (!rtcInitialized) {
 		if (!hwSleepInit()) {
@@ -522,6 +742,7 @@ int8_t hwSleep(const uint8_t interrupt1, const uint8_t mode1,
 			return MY_SLEEP_NOT_POSSIBLE;
 		}
 	}
+#endif
 
 	// Reset sleep remaining
 	sleepRemainingMs = 0ul;
@@ -549,39 +770,16 @@ int8_t hwSleep(const uint8_t interrupt1, const uint8_t mode1,
 	delay(10);
 #endif
 
-	// Disable peripheral clocks
-	__HAL_RCC_SPI1_CLK_DISABLE();
-	__HAL_RCC_I2C1_CLK_DISABLE();
-	__HAL_RCC_I2C2_CLK_DISABLE();
-	__HAL_RCC_ADC_CLK_DISABLE();
+	// Prepare peripherals for sleep
+	hwPrepareSleep();
 
-#if defined(STM32U0xx)
-	DBGMCU->CR = 0;
+	// Enter the configured sleep mode
+	hwEnterSleepMode();
 
-	// Enable EXTI line 17 for RTC Alarm wake-up
-	EXTI->IMR1 |= (1UL << 17);
-	EXTI->RTSR1 |= (1UL << 17);
-	EXTI->RPR1 = (1UL << 17);
-	PWR->CR3 |= PWR_CR3_EIWUL;
-#endif
+	// ========== WOKE UP ==========
 
-	// Suspend SysTick
-	HAL_SuspendTick();
-
-	// Enter STOP mode
-	HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
-
-	// After wake-up: restore system clock
-	hwSleepRestoreSystemClock();
-
-	// Resume SysTick
-	HAL_ResumeTick();
-
-	// Re-enable peripheral clocks
-	__HAL_RCC_SPI1_CLK_ENABLE();
-	__HAL_RCC_I2C1_CLK_ENABLE();
-	__HAL_RCC_I2C2_CLK_ENABLE();
-	__HAL_RCC_ADC_CLK_ENABLE();
+	// Restore peripherals
+	hwRestoreAfterSleep();
 
 #if !defined(MY_DISABLED_SERIAL)
 	Serial.println("Woke");
@@ -596,8 +794,10 @@ int8_t hwSleep(const uint8_t interrupt1, const uint8_t mode1,
 		detachInterrupt(interrupt2);
 	}
 
+#if MY_STM32_SLEEP_MODE != POWER_SLEEP_STANDBY
 	// Disable alarm
 	rtc.disableAlarm(STM32RTC::ALARM_A);
+#endif
 
 	// Determine wake-up source
 	int8_t ret = MY_WAKE_UP_BY_TIMER;
