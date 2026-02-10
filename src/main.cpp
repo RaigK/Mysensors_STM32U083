@@ -60,12 +60,13 @@
 #define I2C2_SCL_PIN PB10
 
 // Sleep interval between reports (in milliseconds)
-#define SLEEP_TIME 10000  // 10 seconds for testing
+#define SLEEP_TIME 60000  // 60 seconds
 
 // Child IDs
 #define CHILD_ID_TEMP 0
 #define CHILD_ID_HUM 1
 #define CHILD_ID_BATT 2
+#define CHILD_ID_SIGNAL 3
 
 // Battery voltage ADC pin
 #define BATTERY_ADC_PIN PA0
@@ -85,6 +86,7 @@ ClosedCube_HDC1080 hdc1080;
 MyMessage msgTemp(CHILD_ID_TEMP, V_TEMP);
 MyMessage msgHum(CHILD_ID_HUM, V_HUM);
 MyMessage msgBatt(CHILD_ID_BATT, V_VOLTAGE);
+MyMessage msgSignal(CHILD_ID_SIGNAL, V_LEVEL);
 
 // Custom system clock configuration with power mode support
 // Supports: Normal Run (16 MHz HSI) or Low Power Run (2 MHz MSI)
@@ -201,6 +203,7 @@ void presentation()
 	present(CHILD_ID_TEMP, S_TEMP);
 	present(CHILD_ID_HUM, S_HUM);
 	present(CHILD_ID_BATT, S_MULTIMETER);
+	present(CHILD_ID_SIGNAL, S_SOUND);
 }
 
 float readBatteryVoltage()
@@ -266,7 +269,13 @@ void loop()
 	Serial.print(" H=");
 	Serial.print(ok2);
 	Serial.print(" B=");
-	Serial.println(ok3);
+	Serial.print(ok3);
+
+	// Send signal strength (RSSI in dBm)
+	int16_t rssi = transportGetSignalReport(SR_RX_RSSI);
+	bool ok4 = send(msgSignal.set(rssi));
+	Serial.print(" S=");
+	Serial.println(ok4);
 
 	// Also send battery level to controller
 	sendBatteryLevel(batteryPercent);
