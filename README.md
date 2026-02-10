@@ -9,6 +9,7 @@ Low-power MySensors sensor node for STM32U083RC microcontroller with RFM69 radio
 - **Temperature & Humidity**: HDC1080 sensor via I2C
 - **Battery monitoring**: ADC-based voltage measurement with percentage calculation
 - **RFM69HW radio**: 868 MHz, high-power module support
+- **ATC signal reporting**: RSSI and TX power level with automatic transmission control
 - **MySensors compatible**: Works with any MySensors gateway/controller
 
 ## Hardware
@@ -102,12 +103,24 @@ For minimum current consumption:
 Key defines in `src/main.cpp`:
 
 ```cpp
+#define MY_SIGNAL_REPORT_ENABLED
 #define MY_RADIO_RFM69
 #define MY_RFM69_NEW_DRIVER
 #define MY_IS_RFM69HW
 #define MY_RFM69_FREQUENCY RFM69_868MHZ
+#define MY_RFM69_ATC_TARGET_RSSI_DBM (-70)
 #define MY_NODE_ID 11
 ```
+
+### Sensor Channels
+
+| Child ID | Type | Description |
+|----------|------|-------------|
+| 0 | S_TEMP | Temperature (HDC1080) |
+| 1 | S_HUM | Humidity (HDC1080) |
+| 2 | S_MULTIMETER | Battery voltage |
+| 3 | S_SOUND | RX RSSI (dBm) |
+| 4 | S_SOUND | TX Power level (dBm) |
 
 ## License
 
