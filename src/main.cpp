@@ -39,12 +39,16 @@
 #define MY_SMART_SLEEP_WAIT_DURATION_MS 0
 #define MY_SLEEP_TRANSPORT_RECONNECT_TIMEOUT_MS 0
 
+// Enable signal report functionalities
+#define MY_SIGNAL_REPORT_ENABLED
+
 // Enable and select radio type attached
 #define MY_RADIO_RFM69
 #define MY_RFM69_NEW_DRIVER
 #define MY_IS_RFM69HW
 #define MY_RFM69_FREQUENCY RFM69_868MHZ
 #define MY_RFM69_TX_POWER_DBM (6)
+#define MY_RFM69_ATC_TARGET_RSSI_DBM (-70)
 #define MY_RFM69_CS_PIN PB6
 #define MY_RFM69_IRQ_PIN PA10
 #define MY_RFM69_IRQ_NUM PA10
@@ -66,7 +70,9 @@
 #define CHILD_ID_TEMP 0
 #define CHILD_ID_HUM 1
 #define CHILD_ID_BATT 2
-#define CHILD_ID_SIGNAL 3
+#define CHILD_ID_TX_RSSI 3
+#define CHILD_ID_RX_RSSI 4
+#define CHILD_ID_UPLINK_QUALITY 5
 
 // Battery voltage ADC pin
 #define BATTERY_ADC_PIN PA0
@@ -86,7 +92,9 @@ ClosedCube_HDC1080 hdc1080;
 MyMessage msgTemp(CHILD_ID_TEMP, V_TEMP);
 MyMessage msgHum(CHILD_ID_HUM, V_HUM);
 MyMessage msgBatt(CHILD_ID_BATT, V_VOLTAGE);
-MyMessage msgSignal(CHILD_ID_SIGNAL, V_LEVEL);
+MyMessage msgTxRSSI(CHILD_ID_TX_RSSI, V_CUSTOM);
+MyMessage msgRxRSSI(CHILD_ID_RX_RSSI, V_CUSTOM);
+MyMessage msgUplinkQuality(CHILD_ID_UPLINK_QUALITY, V_CUSTOM);
 
 // Custom system clock configuration with power mode support
 // Supports: Normal Run (16 MHz HSI) or Low Power Run (2 MHz MSI)
@@ -203,7 +211,9 @@ void presentation()
 	present(CHILD_ID_TEMP, S_TEMP);
 	present(CHILD_ID_HUM, S_HUM);
 	present(CHILD_ID_BATT, S_MULTIMETER);
-	present(CHILD_ID_SIGNAL, S_SOUND);
+	present(CHILD_ID_TX_RSSI, S_CUSTOM, "TX RSSI");
+	present(CHILD_ID_RX_RSSI, S_CUSTOM, "RX RSSI");
+	present(CHILD_ID_UPLINK_QUALITY, S_CUSTOM, "UPLINK QUALITY");
 }
 
 float readBatteryVoltage()
@@ -271,11 +281,11 @@ void loop()
 	Serial.print(" B=");
 	Serial.print(ok3);
 
-	// Send signal strength (RSSI in dBm)
-	int16_t rssi = transportGetSignalReport(SR_RX_RSSI);
-	bool ok4 = send(msgSignal.set(rssi));
-	Serial.print(" S=");
-	Serial.println(ok4);
+	// Send signal report (ATC)
+	send(msgTxRSSI.set(transportGetSignalReport(SR_TX_RSSI)));
+	send(msgRxRSSI.set(transportGetSignalReport(SR_RX_RSSI)));
+	send(msgUplinkQuality.set(transportGetSignalReport(SR_UPLINK_QUALITY)));
+	Serial.println();
 
 	// Also send battery level to controller
 	sendBatteryLevel(batteryPercent);
