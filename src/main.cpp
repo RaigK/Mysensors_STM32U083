@@ -70,9 +70,8 @@
 #define CHILD_ID_TEMP 0
 #define CHILD_ID_HUM 1
 #define CHILD_ID_BATT 2
-#define CHILD_ID_TX_RSSI 3
-#define CHILD_ID_RX_RSSI 4
-#define CHILD_ID_UPLINK_QUALITY 5
+#define CHILD_ID_RSSI 3
+#define CHILD_ID_TX_POWER 4
 
 // Battery voltage ADC pin
 #define BATTERY_ADC_PIN PA0
@@ -92,9 +91,8 @@ ClosedCube_HDC1080 hdc1080;
 MyMessage msgTemp(CHILD_ID_TEMP, V_TEMP);
 MyMessage msgHum(CHILD_ID_HUM, V_HUM);
 MyMessage msgBatt(CHILD_ID_BATT, V_VOLTAGE);
-MyMessage msgTxRSSI(CHILD_ID_TX_RSSI, V_CUSTOM);
-MyMessage msgRxRSSI(CHILD_ID_RX_RSSI, V_CUSTOM);
-MyMessage msgUplinkQuality(CHILD_ID_UPLINK_QUALITY, V_CUSTOM);
+MyMessage msgRSSI(CHILD_ID_RSSI, V_LEVEL);
+MyMessage msgTxPower(CHILD_ID_TX_POWER, V_LEVEL);
 
 // Custom system clock configuration with power mode support
 // Supports: Normal Run (16 MHz HSI) or Low Power Run (2 MHz MSI)
@@ -211,9 +209,8 @@ void presentation()
 	present(CHILD_ID_TEMP, S_TEMP);
 	present(CHILD_ID_HUM, S_HUM);
 	present(CHILD_ID_BATT, S_MULTIMETER);
-	present(CHILD_ID_TX_RSSI, S_CUSTOM, "TX RSSI");
-	present(CHILD_ID_RX_RSSI, S_CUSTOM, "RX RSSI");
-	present(CHILD_ID_UPLINK_QUALITY, S_CUSTOM, "UPLINK QUALITY");
+	present(CHILD_ID_RSSI, S_SOUND, "RSSI dBm");
+	present(CHILD_ID_TX_POWER, S_SOUND, "TX Power dBm");
 }
 
 float readBatteryVoltage()
@@ -281,11 +278,15 @@ void loop()
 	Serial.print(" B=");
 	Serial.print(ok3);
 
-	// Send signal report (ATC)
-	send(msgTxRSSI.set(transportGetSignalReport(SR_TX_RSSI)));
-	send(msgRxRSSI.set(transportGetSignalReport(SR_RX_RSSI)));
-	send(msgUplinkQuality.set(transportGetSignalReport(SR_UPLINK_QUALITY)));
-	Serial.println();
+	// Send signal report (ATC) - RX RSSI from ACK, TX power level
+	int16_t rssi = transportGetSignalReport(SR_RX_RSSI);
+	int16_t txPower = transportGetSignalReport(SR_TX_POWER_LEVEL);
+	send(msgRSSI.set(rssi));
+	send(msgTxPower.set(txPower));
+	Serial.print(" RSSI=");
+	Serial.print(rssi);
+	Serial.print(" TX=");
+	Serial.println(txPower);
 
 	// Also send battery level to controller
 	sendBatteryLevel(batteryPercent);
