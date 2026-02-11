@@ -8,21 +8,25 @@ MySensors sensor node implementation for STM32U083RC microcontroller with RFM69 
 
 ## Build Commands
 
+PlatformIO CLI is not in PATH — always use the full path:
+
 ```bash
 # Build the project
-pio run
+"C:/Users/raigk/.platformio/penv/Scripts/pio.exe" run
 
 # Upload to device (uses STM32CubeProgrammer CLI via ST-Link SWD)
-pio run -t upload
+"C:/Users/raigk/.platformio/penv/Scripts/pio.exe" run -t upload
 
-# Monitor serial output (115200 baud)
-pio device monitor
+# Monitor serial output (COM16 at 115200 baud)
+"C:/Users/raigk/.platformio/penv/Scripts/pio.exe" device monitor
 
 # Clean build
-pio run -t clean
+"C:/Users/raigk/.platformio/penv/Scripts/pio.exe" run -t clean
 ```
 
 Upload requires STM32CubeProgrammer installed at `C:/Program Files/STMicroelectronics/STM32Cube/STM32CubeProgrammer/`. The upload command flashes to `0x08000000` via SWD and resets.
+
+**Upload troubleshooting**: When the MCU is in STOP2 sleep, the ST-Link cannot connect ("Unable to get core ID"). The user must **hold the reset button** during upload. First attempts often fail — just retry with reset held.
 
 ## Architecture
 
@@ -34,6 +38,7 @@ Key patches:
 - `hal/architecture/STM32/MyHwSTM32.cpp` - Complete STM32 hardware abstraction with low-power STOP mode sleep, RTC Alarm-based wake-up (uses STM32RTC library), GPIO interrupt wake-up, EEPROM emulation
 - `hal/architecture/STM32/MyHwSTM32.h` - Header for the STM32 HAL implementation
 - `hal/crypto/generic/drivers/AES/AES.h` - Fixes macro conflict between STM32 HAL's `AES` peripheral definition and MySensors' `AES` class (lines 39-41: `#ifdef AES #undef AES`)
+- `hal/crypto/generic/MyCryptoGeneric.cpp`, `hal/crypto/generic/drivers/AES/AES.cpp`, `AES_config.h` - Crypto driver files included to ensure the patched AES.h is used
 
 ### STM32U0 Compatibility Fixes
 
@@ -135,3 +140,21 @@ Key defines in `src/main.cpp`:
 - `MY_DEBUG` for serial debug output (comment out for lowest power)
 - `MY_DISABLED_SERIAL` - define to disable serial entirely for lowest power
 - `MY_SMART_SLEEP_WAIT_DURATION_MS 0` - disable smart sleep for faster wake cycles
+
+### ATC Signal Reporting
+
+Requires `MY_SIGNAL_REPORT_ENABLED` and `MY_RFM69_ATC_TARGET_RSSI_DBM (-70)` defines. Use `transportGetSignalReport()` after `send()` calls:
+- `SR_RX_RSSI` - works reliably, measures signal from ACK packets
+- `SR_TX_POWER_LEVEL` - works, shows current ATC-adjusted TX power in dBm
+- `SR_TX_RSSI` - **do not use**, returns 127 without gateway-side ATC support
+- Uses `S_SOUND` / `V_LEVEL` sensor types for controller compatibility (`S_CUSTOM` / `V_CUSTOM` may not display values in some controllers)
+
+### Sensor Channels
+
+| Child ID | Type | Description |
+|----------|------|-------------|
+| 0 | S_TEMP | Temperature (HDC1080) |
+| 1 | S_HUM | Humidity (HDC1080) |
+| 2 | S_MULTIMETER | Battery voltage |
+| 3 | S_SOUND | RX RSSI (dBm) |
+| 4 | S_SOUND | TX Power level (dBm) |
