@@ -79,7 +79,7 @@ Radio (RFM69 on SPI1):
 Sensor (HDC1080 on I2C2):
 - SCL: PB10, SDA: PB11
 
-Battery ADC: PA0 (100k/100k voltage divider, measures up to 6.6V)
+Battery ADC: PA0 (2:1 voltage divider, measures up to 6.6V)
 
 ## Key Implementation Details
 
