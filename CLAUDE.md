@@ -79,7 +79,7 @@ Radio (RFM69 on SPI1):
 Sensor (HDC1080 on I2C2):
 - SCL: PB10, SDA: PB11
 
-Battery ADC: PA0 (2:1 voltage divider, measures up to 6.6V)
+Battery ADC: PA0 (2:1 voltage divider, measures up to 6.6V). Uses factory-calibrated VREFINT to measure actual VDDA at runtime instead of assuming 3.3V. Requires `analogReadResolution(12)` — STM32duino defaults to 10-bit.
 
 ## Key Implementation Details
 

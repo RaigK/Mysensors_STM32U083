@@ -7,7 +7,7 @@ Low-power MySensors sensor node for STM32U083RC microcontroller with RFM69 radio
 - **Ultra-low power**: Stop 2 sleep mode (~2-5 µA), Low Power Run mode (2 MHz)
 - **Configurable power modes**: Compile-time selection of run and sleep modes
 - **Temperature & Humidity**: HDC1080 sensor via I2C
-- **Battery monitoring**: ADC-based voltage measurement with percentage calculation
+- **Battery monitoring**: ADC with VREFINT-calibrated reference, 2:1 voltage divider
 - **RFM69HW radio**: 868 MHz, high-power module support
 - **ATC signal reporting**: RSSI and TX power level with automatic transmission control
 - **MySensors compatible**: Works with any MySensors gateway/controller
@@ -19,7 +19,7 @@ Low-power MySensors sensor node for STM32U083RC microcontroller with RFM69 radio
 | **MCU** | STM32U083RC (Cortex-M0+, 256KB Flash, 40KB RAM) |
 | **Radio** | RFM69HW on SPI1 (PA5/PA6/PA7), CS=PB6, IRQ=PA10 |
 | **Sensor** | HDC1080 on I2C2 (PB10=SCL, PB11=SDA) |
-| **Battery** | Voltage divider on PA0 (ADC) |
+| **Battery** | 2:1 voltage divider on PA0 (ADC, VREFINT-calibrated) |
 
 ## Build & Upload
 
@@ -97,6 +97,8 @@ For minimum current consumption:
 - **RTC Wake-up Timer broken**: Uses RTC Alarm A instead (works reliably)
 - **Register differences**: Requires `RTC_ISR_INITS=RTC_ICSR_INITS` define
 - **GPIO optimization**: Unused pins set to analog mode to reduce leakage
+- **ADC resolution**: STM32duino defaults to 10-bit; must call `analogReadResolution(12)` for 12-bit
+- **ADC reference**: Uses factory-calibrated VREFINT to measure actual VDDA at runtime instead of assuming 3.3V
 
 ## MySensors Configuration
 
