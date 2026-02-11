@@ -79,9 +79,7 @@
 // For direct connection to battery (max 3.3V): set to 1.0
 // For voltage divider (e.g., 100k/100k for max 6.6V): set to 2.0
 #define VOLTAGE_DIVIDER_RATIO 2.0
-// ADC reference voltage
-#define ADC_REF_VOLTAGE 3.3
-// ADC resolution (12-bit = 4096)
+// ADC resolution (12-bit)
 #define ADC_MAX_VALUE 4095
 
 // HDC1080 sensor
@@ -194,7 +192,8 @@ void setup()
 	// Initialize HDC1080
 	hdc1080.begin(0x40);
 
-	// Configure battery ADC pin
+	// Configure battery ADC pin (12-bit to match ADC_MAX_VALUE 4095)
+	analogReadResolution(12);
 	pinMode(BATTERY_ADC_PIN, INPUT_ANALOG);
 
 #ifndef MY_DISABLED_SERIAL
@@ -213,6 +212,23 @@ void presentation()
 	present(CHILD_ID_TX_POWER, S_SOUND, "TX Power dBm");
 }
 
+float readVDDA()
+{
+	// Measure actual VDDA using factory-calibrated internal voltage reference
+	uint32_t vrefSum = 0;
+	const int numReadings = 10;
+
+	for (int i = 0; i < numReadings; i++) {
+		vrefSum += analogRead(AVREF);
+		delay(1);
+	}
+
+	float vrefintRaw = (float)vrefSum / numReadings;
+
+	// VDDA = calibration_voltage_mV * calibration_value / current_reading / 1000
+	return ((float)VREFINT_CAL_VREF * (float)(*VREFINT_CAL_ADDR) / vrefintRaw) / 1000.0f;
+}
+
 float readBatteryVoltage()
 {
 	// Read ADC value (average of multiple readings for stability)
@@ -226,8 +242,9 @@ float readBatteryVoltage()
 
 	float adcValue = (float)adcSum / numReadings;
 
-	// Convert to voltage
-	float voltage = (adcValue / ADC_MAX_VALUE) * ADC_REF_VOLTAGE * VOLTAGE_DIVIDER_RATIO;
+	// Convert to voltage using measured VDDA instead of hardcoded 3.3V
+	float vdda = readVDDA();
+	float voltage = (adcValue / ADC_MAX_VALUE) * vdda * VOLTAGE_DIVIDER_RATIO;
 
 	return voltage;
 }
