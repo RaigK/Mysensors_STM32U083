@@ -249,12 +249,14 @@ float readBatteryVoltage()
 	return voltage;
 }
 
+// Battery cutoff voltage - stop transmitting below this
+#define BATTERY_CUTOFF_V 2.85
+
 uint8_t voltageToBatteryPercent(float voltage)
 {
-	// Assuming Li-Ion/LiPo battery: 3.0V = 0%, 4.2V = 100%
-	// Adjust these values based on your battery type
-	const float minVoltage = 3.0;
-	const float maxVoltage = 4.2;
+	// Lithium Thionyl Chloride (Li-SOCl2): 3.6V nominal, 2.85V cutoff
+	const float minVoltage = BATTERY_CUTOFF_V;
+	const float maxVoltage = 3.6;
 
 	if (voltage <= minVoltage) return 0;
 	if (voltage >= maxVoltage) return 100;
@@ -282,6 +284,17 @@ void loop()
 	Serial.print("V (");
 	Serial.print(batteryPercent);
 	Serial.println("%)");
+
+	// Battery empty - send 0% and stop transmitting
+	if (batteryVoltage <= BATTERY_CUTOFF_V) {
+		Serial.println("Battery empty! Sending 0% and shutting down.");
+		send(msgBatt.set(batteryVoltage, 2));
+		sendBatteryLevel(0);
+		Serial.flush();
+		// Sleep indefinitely to preserve remaining capacity
+		sleep(0);
+		return;
+	}
 
 	// Send to gateway
 	Serial.println("Sending to gateway...");
