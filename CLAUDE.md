@@ -46,7 +46,7 @@ The STM32U0 series requires workarounds defined in `platformio.ini`:
 
 - `RTC_ISR_INITS=RTC_ICSR_INITS` - U0 uses ICSR register instead of ISR for RTC initialization check
 - `RTC_WKUP_IRQn=RTC_TAMP_IRQn` - U0 combines RTC wake-up into TAMP interrupt vector (uses `RTC_TAMP_IRQHandler`)
-- `-include "include/stm32_aes_fix.h"` - Force-included before all headers
+- `-include "include/stm32_aes_fix.h"` - Force-included before all headers (the file itself is a placeholder; the actual `#undef AES` fix lives in the patched `lib/MySensors_patch/hal/crypto/generic/drivers/AES/AES.h`)
 - `ARDUINO_ARCH_STM32` and `ARDUINO_NUCLEO_U083RC` - Required board identification defines
 
 ### Custom Board Definition
@@ -79,7 +79,7 @@ Radio (RFM69 on SPI1):
 Sensor (HDC1080 on I2C2):
 - SCL: PB10, SDA: PB11
 
-Battery ADC: PA0 (2:1 voltage divider, measures up to 6.6V). Uses factory-calibrated VREFINT to measure actual VDDA at runtime instead of assuming 3.3V. Requires `analogReadResolution(12)` — STM32duino defaults to 10-bit.
+Battery ADC: PA0 (2:1 voltage divider, measures up to 6.6V). Uses factory-calibrated VREFINT to measure actual VDDA at runtime instead of assuming 3.3V. Requires `analogReadResolution(12)` — STM32duino defaults to 10-bit. The calibration flow: `readVDDA()` reads the internal `AVREF` channel and computes VDDA from `VREFINT_CAL_ADDR`/`VREFINT_CAL_VREF` factory constants, then `readBatteryVoltage()` uses that VDDA to scale the PA0 ADC reading.
 
 ## Key Implementation Details
 
@@ -139,7 +139,10 @@ Key defines in `src/main.cpp`:
 - `MY_NODE_ID 11` (static node ID)
 - `MY_DEBUG` for serial debug output (comment out for lowest power)
 - `MY_DISABLED_SERIAL` - define to disable serial entirely for lowest power
+- `MY_SPLASH_SCREEN_DISABLED` - skips MySensors boot banner
 - `MY_SMART_SLEEP_WAIT_DURATION_MS 0` - disable smart sleep for faster wake cycles
+- `MY_SLEEP_TRANSPORT_RECONNECT_TIMEOUT_MS 0` - skip transport reconnect delay on wake
+- `SLEEP_TIME 60000` - sleep interval between sensor reports (ms)
 
 ### ATC Signal Reporting
 
