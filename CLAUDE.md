@@ -81,6 +81,8 @@ Sensor (HDC1080 on I2C2):
 
 Battery ADC: PA0 (2:1 voltage divider, measures up to 6.6V). Uses factory-calibrated VREFINT to measure actual VDDA at runtime instead of assuming 3.3V. Requires `analogReadResolution(12)` — STM32duino defaults to 10-bit. The calibration flow: `readVDDA()` reads the internal `AVREF` channel and computes VDDA from `VREFINT_CAL_ADDR`/`VREFINT_CAL_VREF` factory constants, then `readBatteryVoltage()` uses that VDDA to scale the PA0 ADC reading.
 
+Battery chemistry: **Lithium Thionyl Chloride (Li-SOCl2)**, 3.6V nominal. Battery percentage mapped to 2.85–3.6V range. At or below `BATTERY_CUTOFF_V` (2.85V), the node sends a final battery voltage + 0% level and enters indefinite sleep to preserve remaining capacity — no further sensor or signal transmissions.
+
 ## Key Implementation Details
 
 ### Power Mode Configuration
