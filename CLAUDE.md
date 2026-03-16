@@ -166,3 +166,12 @@ Requires `MY_SIGNAL_REPORT_ENABLED` and `MY_RFM69_ATC_TARGET_RSSI_DBM (-70)` def
 | 2 | S_MULTIMETER | Battery voltage |
 | 3 | S_SOUND | RX RSSI (dBm) |
 | 4 | S_SOUND | TX Power level (dBm) |
+
+### Battery ADC Implementation Notes
+
+`readADC_U0()` uses direct STM32 HAL calls (bypasses `analogRead()`):
+- **STM32duino bug**: `analog.cpp` line ~1125 sets `AdcChannelConf.SamplingTime` to a raw cycle constant on STM32U0 (only `STM32G0xx` is excluded). On STM32U0, this field must be `ADC_SAMPLINGTIME_COMMON_1/2` — so `HAL_ADC_ConfigChannel()` fails silently and `analogRead()` returns 0.
+- **Destructive DR read**: Reading `ADC1->DR` directly (e.g., for diagnostics) before `HAL_ADC_GetValue()` consumes the conversion result — on STM32U0/G0/C0, reading DR clears EOC and empties the result register. Only read DR once via `HAL_ADC_GetValue()`.
+- **Calibration**: `HAL_ADCEx_Calibration_Start()` returns HAL_ERROR on STM32U0 — skipped. Factory trim (CALFACT) is loaded from OTP at power-on; no runtime calibration needed for battery monitoring.
+- **Channel mapping**: PA0 = ADC1_IN4 (channel 4) on STM32U083 LQFP64. PC0–PC3 are IN0–IN3, so channels are offset — PA0 is NOT IN0.
+- **Battery cutoff guard**: `batteryVoltage > 2.5f` prevents `sleep(0)` when running on USB only (PA0 reads ~0V when no battery is connected through the voltage divider).

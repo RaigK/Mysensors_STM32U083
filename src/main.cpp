@@ -167,7 +167,10 @@ extern "C" void SystemClock_Config(void)
 
 void before()
 {
-	// Enable debug in STOP mode early so SWD stays accessible in sleep
+	// Enable DBGMCU clock first (STM32U0-specific: RCC->DBGCFGR.DBGEN must be set
+	// before any DBGMCU register writes take effect)
+	__HAL_RCC_DBGMCU_CLK_ENABLE();
+	// Enable debug in STOP mode so SWD stays accessible in sleep
 	HAL_DBGMCU_EnableDBGStopMode();
 
 	// hwInit() already called Serial.begin() with LPUART1 (default).
@@ -264,27 +267,36 @@ static uint32_t readADC_U0(uint32_t channel)
 	hadc.Init.SamplingTimeCommon2   = ADC_SAMPLETIME_160CYCLES_5;  // shared timing slot 2
 	hadc.Init.OversamplingMode      = DISABLE;
 
-	if (HAL_ADC_Init(&hadc) != HAL_OK) {
+	HAL_StatusTypeDef r;
+	r = HAL_ADC_Init(&hadc);
+	if (r != HAL_OK) {
 		__HAL_RCC_ADC_CLK_DISABLE();
 		return 0;
 	}
+
+	// Note: HAL_ADCEx_Calibration_Start() consistently returns HAL_ERROR on STM32U0
+	// regardless of ADEN state — skipped. Factory trim (CALFACT) is loaded from OTP
+	// at power-on by the STM32U0 ROM; no runtime calibration needed for battery monitoring.
 
 	sConfig.Channel      = channel;
 	sConfig.Rank         = ADC_RANK_CHANNEL_NUMBER;
 	sConfig.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;  // index, not raw cycles
 
-	if (HAL_ADC_ConfigChannel(&hadc, &sConfig) != HAL_OK) {
+	r = HAL_ADC_ConfigChannel(&hadc, &sConfig);
+	if (r != HAL_OK) {
 		HAL_ADC_DeInit(&hadc);
 		__HAL_RCC_ADC_CLK_DISABLE();
 		return 0;
 	}
 
-	HAL_ADCEx_Calibration_Start(&hadc);
+	r = HAL_ADC_Start(&hadc);
 
 	uint32_t value = 0;
-	if (HAL_ADC_Start(&hadc) == HAL_OK &&
-	    HAL_ADC_PollForConversion(&hadc, 100) == HAL_OK) {
-		value = HAL_ADC_GetValue(&hadc);
+	if (r == HAL_OK) {
+		r = HAL_ADC_PollForConversion(&hadc, 100);
+		if (r == HAL_OK) {
+			value = HAL_ADC_GetValue(&hadc);
+		}
 	}
 
 	HAL_ADC_Stop(&hadc);
@@ -347,13 +359,13 @@ void loop()
 	Serial.print(batteryPercent);
 	Serial.println("%)");
 
-	// Battery empty - send 0% and stop transmitting
-	if (batteryVoltage <= BATTERY_CUTOFF_V) {
+	// Battery empty - send 0% and stop transmitting to preserve remaining capacity.
+	// Guard > 2.5V: only trigger on a real dying battery; <2.5V is USB-only / no battery.
+	if (batteryVoltage <= BATTERY_CUTOFF_V && batteryVoltage > 2.5f) {
 		Serial.println("Battery empty! Sending 0% and shutting down.");
 		send(msgBatt.set(batteryVoltage, 2));
 		sendBatteryLevel(0);
 		Serial.flush();
-		// Sleep indefinitely to preserve remaining capacity
 		sleep(0);
 		return;
 	}

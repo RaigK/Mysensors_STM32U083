@@ -452,6 +452,9 @@ static void hwPrepareSleep(void)
 	__HAL_RCC_ADC_CLK_DISABLE();
 
 #if defined(STM32U0xx)
+	// STM32U0: DBGMCU clock must be enabled via RCC->DBGCFGR.DBGEN before
+	// DBGMCU register writes take effect (unlike most other STM32 families)
+	__HAL_RCC_DBGMCU_CLK_ENABLE();
 	// Enable debug in STOP mode so SWD remains accessible without NRST
 	HAL_DBGMCU_EnableDBGStopMode();
 
