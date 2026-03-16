@@ -28,14 +28,14 @@
 // Run modes: POWER_RUN_NORMAL (16 MHz), POWER_RUN_LOW_POWER (2 MHz)
 // Sleep modes: POWER_SLEEP_SLEEP, POWER_SLEEP_LP_SLEEP, POWER_SLEEP_STOP0,
 //              POWER_SLEEP_STOP1, POWER_SLEEP_STOP2, POWER_SLEEP_STANDBY
-#define MY_STM32_RUN_MODE    POWER_RUN_LOW_POWER   // Low Power Run 2 MHz
+#define MY_STM32_RUN_MODE    POWER_RUN_NORMAL   // Test: 16 MHz HSI to verify ADC
 #define MY_STM32_SLEEP_MODE  POWER_SLEEP_STOP2     // Stop 2 mode (~1-3 µA)
 #include "stm32_power_config.h"
 
 // Enable debug prints (comment out for lowest power)
-// #define MY_DEBUG
+#define MY_DEBUG
 #define MY_SPLASH_SCREEN_DISABLED
-#define MY_DISABLED_SERIAL  // Disable serial for lowest power consumption
+// #define MY_DISABLED_SERIAL
 #define MY_SMART_SLEEP_WAIT_DURATION_MS 0
 #define MY_SLEEP_TRANSPORT_RECONNECT_TIMEOUT_MS 0
 
@@ -74,13 +74,13 @@
 #define CHILD_ID_TX_POWER 4
 
 // Battery voltage ADC pin
-#define BATTERY_ADC_PIN PA0
-// Voltage divider ratio (if using one) - adjust based on your circuit
-// For direct connection to battery (max 3.3V): set to 1.0
-// For voltage divider (e.g., 100k/100k for max 6.6V): set to 2.0
+#define BATTERY_ADC_PIN PA0  // ADC1_IN4, LQFP64 pin 14
+// Voltage divider ratio: 2:1 (100k/100k), battery=3.2V → PA0=1.6V
 #define VOLTAGE_DIVIDER_RATIO 2.0
 // ADC resolution (12-bit)
 #define ADC_MAX_VALUE 4095
+// Fixed VDDA: MCU/ADC powered by 2.8V LDO (regulated, no need to measure)
+#define VDD_LDO_VOLTAGE 2.8f
 
 // HDC1080 sensor
 ClosedCube_HDC1080 hdc1080;
@@ -139,8 +139,9 @@ extern "C" void SystemClock_Config(void)
 		HAL_PWREx_DisableLowPowerRunMode();
 	}
 
-	// Voltage scaling range 2 for lower power (valid up to 16 MHz)
-	HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE2);
+	// Voltage scaling range 1 (1.2V) for 16 MHz with 0 wait states (valid up to 24 MHz)
+	// VOS2 at 16MHz needs FLASH_LATENCY_1 which may have HAL issues on STM32U0
+	HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
 
 	// Enable HSI (16 MHz) and LSI (for RTC)
 	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_LSI;
@@ -157,19 +158,36 @@ extern "C" void SystemClock_Config(void)
 	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
 	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
 	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+	// VOS range 1: 0 WS up to 24 MHz
 	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK) {
 		Error_Handler();
 	}
 #endif
 }
 
-void setup()
+void before()
 {
-	// Early debug - before MySensors init
+	// Enable debug in STOP mode early so SWD stays accessible in sleep
+	HAL_DBGMCU_EnableDBGStopMode();
+
+	// hwInit() already called Serial.begin() with LPUART1 (default).
+	// Re-initialize Serial with USART2 via ALT1 pins:
+	// PA_2_ALT1 = USART2 TX (AF7), PA_3_ALT1 = USART2 RX (AF7)
+	Serial.end();  // deinit LPUART1 before switching to USART2
+	Serial.setTx(PA_2_ALT1);
+	Serial.setRx(PA_3_ALT1);
 	Serial.begin(115200);
 	delay(100);
-	Serial.println("\n\n=== BOOT ===");
-	Serial.flush();
+	Serial.println("\n\n=== BOOT === (5s upload window)");
+	// No Serial.flush() here — it blocks forever if uart_init fails
+
+	// 5-second startup delay: guaranteed window for SWD upload
+	// Remove this delay once firmware is confirmed working
+	delay(5000);
+}
+
+void setup()
+{
 
 #ifndef MY_DISABLED_SERIAL
 	// Print actual clock speed and power mode info
@@ -192,8 +210,11 @@ void setup()
 	// Initialize HDC1080
 	hdc1080.begin(0x40);
 
-	// Configure battery ADC pin (12-bit to match ADC_MAX_VALUE 4095)
-	analogReadResolution(12);
+	// Configure battery ADC pin as analog input
+	// Note: analogRead() is NOT used — STM32duino analog.cpp has a bug on STM32U0:
+	// ADC_ChannelConfTypeDef.SamplingTime must be ADC_SAMPLINGTIME_COMMON_1/2 (index),
+	// not a raw cycle count (only STM32G0xx is excluded; STM32U0xx should be too).
+	// We use direct HAL calls in readADC_U0() instead.
 	pinMode(BATTERY_ADC_PIN, INPUT_ANALOG);
 
 #ifndef MY_DISABLED_SERIAL
@@ -212,49 +233,90 @@ void presentation()
 	present(CHILD_ID_TX_POWER, S_SOUND, "TX Power dBm");
 }
 
-float readVDDA()
+// Direct HAL ADC read for STM32U0, bypassing analogRead().
+// Root cause of analogRead() returning 0: STM32duino analog.cpp line ~1125 checks
+// only !defined(STM32G0xx) before setting AdcChannelConf.SamplingTime to the raw
+// cycle count (e.g. ADC_SAMPLETIME_12CYCLES_5). On STM32U0 the field must be
+// ADC_SAMPLINGTIME_COMMON_1 or ADC_SAMPLINGTIME_COMMON_2 (an index into the two
+// shared sample-time registers), so HAL_ADC_ConfigChannel() fails and returns 0.
+static uint32_t readADC_U0(uint32_t channel)
 {
-	// Measure actual VDDA using factory-calibrated internal voltage reference
-	uint32_t vrefSum = 0;
-	const int numReadings = 10;
+	ADC_HandleTypeDef hadc          = {};
+	ADC_ChannelConfTypeDef sConfig  = {};
 
-	for (int i = 0; i < numReadings; i++) {
-		vrefSum += analogRead(AVREF);
-		delay(1);
+	__HAL_RCC_ADC_CLK_ENABLE();
+
+	hadc.Instance                   = ADC1;
+	hadc.Init.ClockPrescaler        = ADC_CLOCK_SYNC_PCLK_DIV4;
+	hadc.Init.Resolution            = ADC_RESOLUTION_12B;
+	hadc.Init.DataAlign             = ADC_DATAALIGN_RIGHT;
+	hadc.Init.ScanConvMode          = ADC_SCAN_SEQ_FIXED;
+	hadc.Init.EOCSelection          = ADC_EOC_SINGLE_CONV;
+	hadc.Init.LowPowerAutoWait      = DISABLE;
+	hadc.Init.LowPowerAutoPowerOff  = DISABLE;
+	hadc.Init.ContinuousConvMode    = DISABLE;
+	hadc.Init.DiscontinuousConvMode = DISABLE;
+	hadc.Init.ExternalTrigConv      = ADC_SOFTWARE_START;
+	hadc.Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_NONE;
+	hadc.Init.DMAContinuousRequests = DISABLE;
+	hadc.Init.Overrun               = ADC_OVR_DATA_OVERWRITTEN;
+	hadc.Init.SamplingTimeCommon1   = ADC_SAMPLETIME_160CYCLES_5;  // shared timing slot 1
+	hadc.Init.SamplingTimeCommon2   = ADC_SAMPLETIME_160CYCLES_5;  // shared timing slot 2
+	hadc.Init.OversamplingMode      = DISABLE;
+
+	if (HAL_ADC_Init(&hadc) != HAL_OK) {
+		__HAL_RCC_ADC_CLK_DISABLE();
+		return 0;
 	}
 
-	float vrefintRaw = (float)vrefSum / numReadings;
+	sConfig.Channel      = channel;
+	sConfig.Rank         = ADC_RANK_CHANNEL_NUMBER;
+	sConfig.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;  // index, not raw cycles
 
-	// VDDA = calibration_voltage_mV * calibration_value / current_reading / 1000
-	return ((float)VREFINT_CAL_VREF * (float)(*VREFINT_CAL_ADDR) / vrefintRaw) / 1000.0f;
+	if (HAL_ADC_ConfigChannel(&hadc, &sConfig) != HAL_OK) {
+		HAL_ADC_DeInit(&hadc);
+		__HAL_RCC_ADC_CLK_DISABLE();
+		return 0;
+	}
+
+	HAL_ADCEx_Calibration_Start(&hadc);
+
+	uint32_t value = 0;
+	if (HAL_ADC_Start(&hadc) == HAL_OK &&
+	    HAL_ADC_PollForConversion(&hadc, 100) == HAL_OK) {
+		value = HAL_ADC_GetValue(&hadc);
+	}
+
+	HAL_ADC_Stop(&hadc);
+	HAL_ADC_DeInit(&hadc);
+	__HAL_RCC_ADC_CLK_DISABLE();
+	return value;
 }
 
 float readBatteryVoltage()
 {
-	// Read ADC value (average of multiple readings for stability)
-	uint32_t adcSum = 0;
-	const int numReadings = 10;
+	// PA0 = ADC1_IN4 (channel 4) on STM32U083, LQFP64 pin 14
+	uint32_t raw = readADC_U0(ADC_CHANNEL_4);
+	float voltage = ((float)raw / ADC_MAX_VALUE) * VDD_LDO_VOLTAGE * VOLTAGE_DIVIDER_RATIO;
 
-	for (int i = 0; i < numReadings; i++) {
-		adcSum += analogRead(BATTERY_ADC_PIN);
-		delay(1);
-	}
-
-	float adcValue = (float)adcSum / numReadings;
-
-	// Convert to voltage using measured VDDA instead of hardcoded 3.3V
-	float vdda = readVDDA();
-	float voltage = (adcValue / ADC_MAX_VALUE) * vdda * VOLTAGE_DIVIDER_RATIO;
+#ifndef MY_DISABLED_SERIAL
+	Serial.print("ADC raw: ");
+	Serial.print(raw);
+	Serial.print(" -> ");
+	Serial.print(voltage, 3);
+	Serial.println("V");
+#endif
 
 	return voltage;
 }
 
 // Battery cutoff voltage - stop transmitting below this
-#define BATTERY_CUTOFF_V 2.85
+// With 2.8V LDO, must be above LDO dropout (~200-300mV) = min ~3.0-3.1V battery
+#define BATTERY_CUTOFF_V 3.1
 
 uint8_t voltageToBatteryPercent(float voltage)
 {
-	// Lithium Thionyl Chloride (Li-SOCl2): 3.6V nominal, 2.85V cutoff
+	// Lithium Thionyl Chloride (Li-SOCl2): 3.6V nominal, cutoff at LDO dropout limit
 	const float minVoltage = BATTERY_CUTOFF_V;
 	const float maxVoltage = 3.6;
 

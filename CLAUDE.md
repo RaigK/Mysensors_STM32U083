@@ -26,7 +26,9 @@ PlatformIO CLI is not in PATH — always use the full path:
 
 Upload requires STM32CubeProgrammer installed at `C:/Program Files/STMicroelectronics/STM32Cube/STM32CubeProgrammer/`. The upload command flashes to `0x08000000` via SWD and resets.
 
-**Upload troubleshooting**: When the MCU is in STOP2 sleep, the ST-Link cannot connect ("Unable to get core ID"). The user must **hold the reset button** during upload. First attempts often fail — just retry with reset held.
+**Debugging with OpenOCD**: `stm32u0x.cfg` in the project root is a custom OpenOCD target config for the STM32U0 (based on the STM32L0 config with STM32L4x flash driver). Referenced by `board_debug.openocd_target = stm32u0x` in `platformio.ini`. Use PlatformIO's debug interface or `openocd -f stm32u0x.cfg` for live debugging. Note: debug sessions enable low-power debug mode via DBGMCU register in the examine-end event.
+
+**Upload note**: The upload command uses `mode=NORMAL freq=480` at 480 kHz. The firmware keeps SWD accessible in STOP2 (PA13/PA14 stay in SWD AF mode, DBGMCU not disabled), so uploads connect without holding the reset button. If upload fails after a firmware change that breaks this, manually hold the RESET button while the upload command runs to force MCU out of sleep.
 
 ## Architecture
 
@@ -137,10 +139,11 @@ Key defines in `src/main.cpp`:
 - `MY_RADIO_RFM69` with `MY_RFM69_NEW_DRIVER`
 - `MY_IS_RFM69HW` for high-power module
 - `MY_RFM69_FREQUENCY RFM69_868MHZ`
-- `MY_RFM69_CS_PIN PB6`, `MY_RFM69_IRQ_PIN PA10`
+- `MY_RFM69_CS_PIN PB6`, `MY_RFM69_IRQ_PIN PA10`, `MY_RFM69_IRQ_NUM PA10` (all three required by new driver)
+- `MY_RFM69_TX_POWER_DBM (6)` - initial/max TX power in dBm before ATC adjusts down
 - `MY_NODE_ID 11` (static node ID)
 - `MY_DEBUG` for serial debug output (comment out for lowest power)
-- `MY_DISABLED_SERIAL` - define to disable serial entirely for lowest power
+- `MY_DISABLED_SERIAL` - disables MySensors serial output; however, the `Serial.begin()` call and initial `=== BOOT ===` message in `setup()` are **unconditional** and always execute regardless of this define
 - `MY_SPLASH_SCREEN_DISABLED` - skips MySensors boot banner
 - `MY_SMART_SLEEP_WAIT_DURATION_MS 0` - disable smart sleep for faster wake cycles
 - `MY_SLEEP_TRANSPORT_RECONNECT_TIMEOUT_MS 0` - skip transport reconnect delay on wake

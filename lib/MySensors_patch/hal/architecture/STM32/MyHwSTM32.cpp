@@ -411,17 +411,10 @@ static void hwConfigureGpioLowPower(void)
 	__HAL_RCC_GPIOD_CLK_ENABLE();
 
 	// PORTA: Keep PA0 (ADC), PA2/PA3 (USART), PA5/PA6/PA7 (SPI), PA10 (RFM69 IRQ)
-	// Set unused: PA1, PA4, PA8, PA9, PA11, PA12, PA13, PA14, PA15
-	// Note: PA13/PA14 are SWDIO/SWCLK - setting to analog disables debug!
-#ifndef MY_DEBUG
-	// Only disable debug pins if debug is off
-	GPIO_InitStruct.Pin = GPIO_PIN_1 | GPIO_PIN_4 | GPIO_PIN_8 | GPIO_PIN_9 |
-	                      GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
-#else
-	// Keep PA13/PA14 for debug
+	// PA13/PA14 (SWDIO/SWCLK) always kept in AF mode so SWD remains accessible in STOP2
+	// Set unused: PA1, PA4, PA8, PA9, PA11, PA12, PA15
 	GPIO_InitStruct.Pin = GPIO_PIN_1 | GPIO_PIN_4 | GPIO_PIN_8 | GPIO_PIN_9 |
 	                      GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_15;
-#endif
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 	// PORTB: Keep PB6 (RFM69 CS), PB10/PB11 (I2C2)
@@ -459,8 +452,8 @@ static void hwPrepareSleep(void)
 	__HAL_RCC_ADC_CLK_DISABLE();
 
 #if defined(STM32U0xx)
-	// Disable debug during sleep (DBGMCU keeps clocks running)
-	DBGMCU->CR = 0;
+	// Enable debug in STOP mode so SWD remains accessible without NRST
+	HAL_DBGMCU_EnableDBGStopMode();
 
 	// Enable EXTI line 17 for RTC Alarm wake-up
 	// On STM32U0, RTC Alarm is on EXTI line 17 (rising edge)
