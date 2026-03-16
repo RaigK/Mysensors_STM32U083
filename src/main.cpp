@@ -63,15 +63,21 @@
 #define I2C2_SDA_PIN PB11
 #define I2C2_SCL_PIN PB10
 
-// Sleep interval between reports (in milliseconds)
-#define SLEEP_TIME 60000  // 60 seconds
+// Default sleep interval between reports (milliseconds); overridden by gateway or EEPROM
+#define SLEEP_TIME_DEFAULT_MS 60000UL  // 60 seconds
 
 // Child IDs
-#define CHILD_ID_TEMP 0
-#define CHILD_ID_HUM 1
-#define CHILD_ID_BATT 2
-#define CHILD_ID_RSSI 3
+#define CHILD_ID_TEMP     0
+#define CHILD_ID_HUM      1
+#define CHILD_ID_BATT     2
+#define CHILD_ID_RSSI     3
 #define CHILD_ID_TX_POWER 4
+#define CHILD_ID_INTERVAL 5  // Gateway-adjustable sleep interval (seconds, V_VAR1)
+
+// EEPROM positions for persistent sleep interval (positions 200-201 are beyond MySensors
+// internal use; MySensors reserves the first ~64 bytes for routing table etc.)
+#define EEPROM_INTERVAL_HI 200  // high byte of uint16_t seconds
+#define EEPROM_INTERVAL_LO 201  // low byte  of uint16_t seconds
 
 // Battery voltage ADC pin
 #define BATTERY_ADC_PIN PA0  // ADC1_IN4, LQFP64 pin 14
@@ -85,12 +91,16 @@
 // HDC1080 sensor
 ClosedCube_HDC1080 hdc1080;
 
+// Current sleep interval in milliseconds (loaded from EEPROM or default)
+static uint32_t sleepTimeMs = SLEEP_TIME_DEFAULT_MS;
+
 // MySensors messages
 MyMessage msgTemp(CHILD_ID_TEMP, V_TEMP);
 MyMessage msgHum(CHILD_ID_HUM, V_HUM);
 MyMessage msgBatt(CHILD_ID_BATT, V_VOLTAGE);
 MyMessage msgRSSI(CHILD_ID_RSSI, V_LEVEL);
 MyMessage msgTxPower(CHILD_ID_TX_POWER, V_LEVEL);
+MyMessage msgInterval(CHILD_ID_INTERVAL, V_VAR1);
 
 // Custom system clock configuration with power mode support
 // Supports: Normal Run (16 MHz HSI) or Low Power Run (2 MHz MSI)
@@ -220,20 +230,71 @@ void setup()
 	// We use direct HAL calls in readADC_U0() instead.
 	pinMode(BATTERY_ADC_PIN, INPUT_ANALOG);
 
+	// Load persisted sleep interval from EEPROM (positions 200-201, big-endian uint16_t s)
+	{
+		uint8_t hi = loadState(EEPROM_INTERVAL_HI);
+		uint8_t lo = loadState(EEPROM_INTERVAL_LO);
+		uint16_t savedSec = ((uint16_t)hi << 8) | lo;
+		// 0xFFFF means uninitialised flash — use default; clamp to sane range [10, 3600]
+		if (savedSec >= 10 && savedSec <= 3600) {
+			sleepTimeMs = (uint32_t)savedSec * 1000UL;
+		}
+	}
+
 #ifndef MY_DISABLED_SERIAL
-	Serial.println("HDC1080 + Battery sensor ready");
+	Serial.print("HDC1080 + Battery sensor ready. Sleep: ");
+	Serial.print(sleepTimeMs / 1000);
+	Serial.println("s");
 #endif
 }
 
 void presentation()
 {
-	sendSketchInfo("TempHum Battery Node", "1.0");
+	sendSketchInfo("TempHum Battery Node", "1.1");
 
 	present(CHILD_ID_TEMP, S_TEMP);
 	present(CHILD_ID_HUM, S_HUM);
 	present(CHILD_ID_BATT, S_MULTIMETER);
 	present(CHILD_ID_RSSI, S_SOUND, "RSSI dBm");
 	present(CHILD_ID_TX_POWER, S_SOUND, "TX Power dBm");
+	present(CHILD_ID_INTERVAL, S_CUSTOM, "Sleep interval s");
+}
+
+// Called by MySensors when the gateway sends a SET or REQ message to this node.
+// Gateway sends: nodeId;CHILD_ID_INTERVAL;C_SET;0;V_VAR1;seconds
+//   e.g. "11;5;1;0;24;120" to set a 120-second (2-minute) sleep interval.
+// Range is clamped to [10, 3600] seconds. The new value is persisted to EEPROM
+// and takes effect on the NEXT sleep cycle.
+void receive(const MyMessage &message)
+{
+	if (message.getSensor() != CHILD_ID_INTERVAL) {
+		return;
+	}
+	if (message.getType() != V_VAR1) {
+		return;
+	}
+
+	long raw = message.getLong();
+
+	// Clamp to sane range: 10 s … 3600 s (10 seconds to 1 hour)
+	if (raw < 10)   raw = 10;
+	if (raw > 3600) raw = 3600;
+
+	uint16_t newSec = (uint16_t)raw;
+	sleepTimeMs = (uint32_t)newSec * 1000UL;
+
+	// Persist big-endian uint16_t in EEPROM positions 200-201
+	saveState(EEPROM_INTERVAL_HI, (uint8_t)(newSec >> 8));
+	saveState(EEPROM_INTERVAL_LO, (uint8_t)(newSec & 0xFF));
+
+#ifndef MY_DISABLED_SERIAL
+	Serial.print("New sleep interval: ");
+	Serial.print(newSec);
+	Serial.println("s (saved to EEPROM)");
+#endif
+
+	// Echo the accepted value back to the gateway immediately
+	send(msgInterval.set((uint16_t)(sleepTimeMs / 1000)));
 }
 
 // Direct HAL ADC read for STM32U0, bypassing analogRead().
@@ -392,14 +453,19 @@ void loop()
 	Serial.print(" TX=");
 	Serial.println(txPower);
 
+	// Report current sleep interval to gateway (also lets gateway discover/set it)
+	send(msgInterval.set((uint16_t)(sleepTimeMs / 1000)));
+
 	// Also send battery level to controller
 	sendBatteryLevel(batteryPercent);
 
 	// Enter low power sleep (MCU STOP mode + radio sleep)
-	Serial.println("Sleeping...");
+	Serial.print("Sleeping ");
+	Serial.print(sleepTimeMs / 1000);
+	Serial.println("s...");
 	Serial.flush();
 
-	sleep(SLEEP_TIME);
+	sleep(sleepTimeMs);
 
 	Serial.println("Woke up");
 }

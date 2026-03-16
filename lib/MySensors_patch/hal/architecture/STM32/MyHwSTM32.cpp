@@ -453,10 +453,20 @@ static void hwPrepareSleep(void)
 
 #if defined(STM32U0xx)
 	// STM32U0: DBGMCU clock must be enabled via RCC->DBGCFGR.DBGEN before
-	// DBGMCU register writes take effect (unlike most other STM32 families)
+	// DBGMCU register writes take effect (unlike most other STM32 families).
 	__HAL_RCC_DBGMCU_CLK_ENABLE();
-	// Enable debug in STOP mode so SWD remains accessible without NRST
+#if defined(MY_DEBUG)
+	// Keep SWD alive in STOP2 so the programmer can connect without NRST.
+	// Costs ~1 µA. When MY_DEBUG is disabled (production), this is omitted
+	// and DBGMCU is zeroed instead, saving ~1 µA — but upload then requires
+	// the reset button (or the 5-second boot window from before()).
 	HAL_DBGMCU_EnableDBGStopMode();
+#else
+	// Production: disable all debug features during sleep to save ~1 µA.
+	// SWD upload still works via the 5-second window in before().
+	DBGMCU->CR = 0;
+	__HAL_RCC_DBGMCU_CLK_DISABLE();
+#endif
 
 	// Enable EXTI line 17 for RTC Alarm wake-up
 	// On STM32U0, RTC Alarm is on EXTI line 17 (rising edge)
