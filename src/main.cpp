@@ -28,7 +28,7 @@
 // Run modes: POWER_RUN_NORMAL (16 MHz), POWER_RUN_LOW_POWER (2 MHz)
 // Sleep modes: POWER_SLEEP_SLEEP, POWER_SLEEP_LP_SLEEP, POWER_SLEEP_STOP0,
 //              POWER_SLEEP_STOP1, POWER_SLEEP_STOP2, POWER_SLEEP_STANDBY
-#define MY_STM32_RUN_MODE    POWER_RUN_NORMAL   // Test: 16 MHz HSI to verify ADC
+#define MY_STM32_RUN_MODE    POWER_RUN_NORMAL   // 16 MHz HSI (use LOW_POWER when MY_DISABLED_SERIAL)
 #define MY_STM32_SLEEP_MODE  POWER_SLEEP_STOP2     // Stop 2 mode (~1-3 µA)
 #include "stm32_power_config.h"
 
@@ -72,12 +72,21 @@
 #define CHILD_ID_BATT     2
 #define CHILD_ID_RSSI     3
 #define CHILD_ID_TX_POWER 4
-#define CHILD_ID_INTERVAL 5  // Gateway-adjustable sleep interval (seconds, V_VAR1)
+#define CHILD_ID_INTERVAL 5  // Gateway-adjustable sleep interval (seconds,  V_VAR1)
+#define CHILD_ID_BATT_MIN 6  // Gateway-adjustable battery cutoff voltage (mV, V_VAR1)
+#define CHILD_ID_BATT_MAX 7  // Gateway-adjustable battery full    voltage (mV, V_VAR1)
 
-// EEPROM positions for persistent sleep interval (positions 200-201 are beyond MySensors
-// internal use; MySensors reserves the first ~64 bytes for routing table etc.)
-#define EEPROM_INTERVAL_HI 200  // high byte of uint16_t seconds
-#define EEPROM_INTERVAL_LO 201  // low byte  of uint16_t seconds
+// EEPROM positions (200+ are beyond MySensors internal range; big-endian uint16_t)
+#define EEPROM_INTERVAL_HI 200  // sleep interval  — high byte (seconds)
+#define EEPROM_INTERVAL_LO 201  //                 — low  byte
+#define EEPROM_BATT_MIN_HI 202  // battery cutoff  — high byte (millivolts)
+#define EEPROM_BATT_MIN_LO 203  //                 — low  byte
+#define EEPROM_BATT_MAX_HI 204  // battery full    — high byte (millivolts)
+#define EEPROM_BATT_MAX_LO 205  //                 — low  byte
+
+// Default Li-SOCl2 battery thresholds
+#define BATT_MIN_DEFAULT_MV 3100  // 3.1 V cutoff (above 2.8 V LDO dropout)
+#define BATT_MAX_DEFAULT_MV 3600  // 3.6 V fully charged
 
 // Battery voltage ADC pin
 #define BATTERY_ADC_PIN PA0  // ADC1_IN4, LQFP64 pin 14
@@ -91,16 +100,20 @@
 // HDC1080 sensor
 ClosedCube_HDC1080 hdc1080;
 
-// Current sleep interval in milliseconds (loaded from EEPROM or default)
+// Runtime adjustable parameters (loaded from EEPROM at boot)
 static uint32_t sleepTimeMs = SLEEP_TIME_DEFAULT_MS;
+static uint16_t battMinMv   = BATT_MIN_DEFAULT_MV;
+static uint16_t battMaxMv   = BATT_MAX_DEFAULT_MV;
 
 // MySensors messages
-MyMessage msgTemp(CHILD_ID_TEMP, V_TEMP);
-MyMessage msgHum(CHILD_ID_HUM, V_HUM);
-MyMessage msgBatt(CHILD_ID_BATT, V_VOLTAGE);
-MyMessage msgRSSI(CHILD_ID_RSSI, V_LEVEL);
+MyMessage msgTemp(CHILD_ID_TEMP,     V_TEMP);
+MyMessage msgHum(CHILD_ID_HUM,       V_HUM);
+MyMessage msgBatt(CHILD_ID_BATT,     V_VOLTAGE);
+MyMessage msgRSSI(CHILD_ID_RSSI,     V_LEVEL);
 MyMessage msgTxPower(CHILD_ID_TX_POWER, V_LEVEL);
 MyMessage msgInterval(CHILD_ID_INTERVAL, V_VAR1);
+MyMessage msgBattMin(CHILD_ID_BATT_MIN,  V_VAR1);
+MyMessage msgBattMax(CHILD_ID_BATT_MAX,  V_VAR1);
 
 // Custom system clock configuration with power mode support
 // Supports: Normal Run (16 MHz HSI) or Low Power Run (2 MHz MSI)
@@ -230,21 +243,40 @@ void setup()
 	// We use direct HAL calls in readADC_U0() instead.
 	pinMode(BATTERY_ADC_PIN, INPUT_ANALOG);
 
-	// Load persisted sleep interval from EEPROM (positions 200-201, big-endian uint16_t s)
+	// Load persisted settings from EEPROM (big-endian uint16_t, positions 200-205)
 	{
-		uint8_t hi = loadState(EEPROM_INTERVAL_HI);
-		uint8_t lo = loadState(EEPROM_INTERVAL_LO);
-		uint16_t savedSec = ((uint16_t)hi << 8) | lo;
-		// 0xFFFF means uninitialised flash — use default; clamp to sane range [10, 3600]
-		if (savedSec >= 10 && savedSec <= 3600) {
-			sleepTimeMs = (uint32_t)savedSec * 1000UL;
+		uint8_t hi, lo;
+		uint16_t v;
+
+		// Sleep interval [10, 3600] seconds
+		hi = loadState(EEPROM_INTERVAL_HI);
+		lo = loadState(EEPROM_INTERVAL_LO);
+		v  = ((uint16_t)hi << 8) | lo;
+		if (v >= 10 && v <= 3600) {
+			sleepTimeMs = (uint32_t)v * 1000UL;
+		}
+
+		// Battery cutoff voltage [2000, 4200] mV
+		hi = loadState(EEPROM_BATT_MIN_HI);
+		lo = loadState(EEPROM_BATT_MIN_LO);
+		v  = ((uint16_t)hi << 8) | lo;
+		if (v >= 2000 && v <= 4200) {
+			battMinMv = v;
+		}
+
+		// Battery full voltage [2000, 4200] mV, must be > cutoff
+		hi = loadState(EEPROM_BATT_MAX_HI);
+		lo = loadState(EEPROM_BATT_MAX_LO);
+		v  = ((uint16_t)hi << 8) | lo;
+		if (v >= 2000 && v <= 4200 && v > battMinMv) {
+			battMaxMv = v;
 		}
 	}
 
 #ifndef MY_DISABLED_SERIAL
-	Serial.print("HDC1080 + Battery sensor ready. Sleep: ");
-	Serial.print(sleepTimeMs / 1000);
-	Serial.println("s");
+	Serial.print("Sleep: "); Serial.print(sleepTimeMs / 1000); Serial.print("s  ");
+	Serial.print("Batt: "); Serial.print(battMinMv); Serial.print("-");
+	Serial.print(battMaxMv); Serial.println(" mV");
 #endif
 }
 
@@ -255,46 +287,78 @@ void presentation()
 	present(CHILD_ID_TEMP, S_TEMP);
 	present(CHILD_ID_HUM, S_HUM);
 	present(CHILD_ID_BATT, S_MULTIMETER);
-	present(CHILD_ID_RSSI, S_SOUND, "RSSI dBm");
-	present(CHILD_ID_TX_POWER, S_SOUND, "TX Power dBm");
-	present(CHILD_ID_INTERVAL, S_CUSTOM, "Sleep interval s");
+	present(CHILD_ID_RSSI,     S_SOUND,   "RSSI dBm");
+	present(CHILD_ID_TX_POWER, S_SOUND,   "TX Power dBm");
+	present(CHILD_ID_INTERVAL, S_CUSTOM,  "Sleep interval s");
+	present(CHILD_ID_BATT_MIN, S_CUSTOM,  "Batt cutoff mV");
+	present(CHILD_ID_BATT_MAX, S_CUSTOM,  "Batt full mV");
 }
 
-// Called by MySensors when the gateway sends a SET or REQ message to this node.
-// Gateway sends: nodeId;CHILD_ID_INTERVAL;C_SET;0;V_VAR1;seconds
-//   e.g. "11;5;1;0;24;120" to set a 120-second (2-minute) sleep interval.
-// Range is clamped to [10, 3600] seconds. The new value is persisted to EEPROM
-// and takes effect on the NEXT sleep cycle.
+// Called by MySensors when the gateway sends a C_SET message to this node.
+// All three adjustable parameters use V_VAR1 payload (integer).
+//
+//   Sleep interval  : "11;5;1;0;24;<seconds>"  range 10–3600
+//   Battery cutoff  : "11;6;1;0;24;<mV>"       range 2000–4200  (e.g. 2850 → 2.85 V)
+//   Battery full    : "11;7;1;0;24;<mV>"        range 2000–4200  (e.g. 3600 → 3.60 V)
+//
+// Values are persisted to EEPROM and take effect immediately.
 void receive(const MyMessage &message)
 {
-	if (message.getSensor() != CHILD_ID_INTERVAL) {
-		return;
-	}
 	if (message.getType() != V_VAR1) {
 		return;
 	}
 
 	long raw = message.getLong();
+	uint8_t sensor = message.getSensor();
 
-	// Clamp to sane range: 10 s … 3600 s (10 seconds to 1 hour)
-	if (raw < 10)   raw = 10;
-	if (raw > 3600) raw = 3600;
-
-	uint16_t newSec = (uint16_t)raw;
-	sleepTimeMs = (uint32_t)newSec * 1000UL;
-
-	// Persist big-endian uint16_t in EEPROM positions 200-201
-	saveState(EEPROM_INTERVAL_HI, (uint8_t)(newSec >> 8));
-	saveState(EEPROM_INTERVAL_LO, (uint8_t)(newSec & 0xFF));
-
+	if (sensor == CHILD_ID_INTERVAL) {
+		if (raw < 10)   raw = 10;
+		if (raw > 3600) raw = 3600;
+		uint16_t v = (uint16_t)raw;
+		sleepTimeMs = (uint32_t)v * 1000UL;
+		saveState(EEPROM_INTERVAL_HI, (uint8_t)(v >> 8));
+		saveState(EEPROM_INTERVAL_LO, (uint8_t)(v & 0xFF));
 #ifndef MY_DISABLED_SERIAL
-	Serial.print("New sleep interval: ");
-	Serial.print(newSec);
-	Serial.println("s (saved to EEPROM)");
+		Serial.print("Interval -> "); Serial.print(v); Serial.println("s");
 #endif
+		send(msgInterval.set(v));
 
-	// Echo the accepted value back to the gateway immediately
-	send(msgInterval.set((uint16_t)(sleepTimeMs / 1000)));
+	} else if (sensor == CHILD_ID_BATT_MIN) {
+		if (raw < 2000) raw = 2000;
+		if (raw > 4200) raw = 4200;
+		uint16_t v = (uint16_t)raw;
+		if (v >= battMaxMv) {
+#ifndef MY_DISABLED_SERIAL
+			Serial.println("Batt cutoff must be < full voltage — rejected");
+#endif
+			return;
+		}
+		battMinMv = v;
+		saveState(EEPROM_BATT_MIN_HI, (uint8_t)(v >> 8));
+		saveState(EEPROM_BATT_MIN_LO, (uint8_t)(v & 0xFF));
+#ifndef MY_DISABLED_SERIAL
+		Serial.print("Batt cutoff -> "); Serial.print(v); Serial.println(" mV");
+#endif
+		send(msgBattMin.set(v));
+
+	} else if (sensor == CHILD_ID_BATT_MAX) {
+		if (raw < 2000) raw = 2000;
+		if (raw > 4200) raw = 4200;
+		uint16_t v = (uint16_t)raw;
+		if (v <= battMinMv) {
+#ifndef MY_DISABLED_SERIAL
+			Serial.println("Batt full must be > cutoff voltage — rejected");
+#endif
+			return;
+		}
+		battMaxMv = v;
+		saveState(EEPROM_BATT_MAX_HI, (uint8_t)(v >> 8));
+		saveState(EEPROM_BATT_MAX_LO, (uint8_t)(v & 0xFF));
+#ifndef MY_DISABLED_SERIAL
+		Serial.print("Batt full -> "); Serial.print(v); Serial.println(" mV");
+#endif
+		send(msgBattMax.set(v));
+	}
 }
 
 // Direct HAL ADC read for STM32U0, bypassing analogRead().
@@ -383,20 +447,13 @@ float readBatteryVoltage()
 	return voltage;
 }
 
-// Battery cutoff voltage - stop transmitting below this
-// With 2.8V LDO, must be above LDO dropout (~200-300mV) = min ~3.0-3.1V battery
-#define BATTERY_CUTOFF_V 3.1
-
 uint8_t voltageToBatteryPercent(float voltage)
 {
-	// Lithium Thionyl Chloride (Li-SOCl2): 3.6V nominal, cutoff at LDO dropout limit
-	const float minVoltage = BATTERY_CUTOFF_V;
-	const float maxVoltage = 3.6;
-
-	if (voltage <= minVoltage) return 0;
-	if (voltage >= maxVoltage) return 100;
-
-	return (uint8_t)(((voltage - minVoltage) / (maxVoltage - minVoltage)) * 100);
+	float minV = battMinMv / 1000.0f;
+	float maxV = battMaxMv / 1000.0f;
+	if (voltage <= minV) return 0;
+	if (voltage >= maxV) return 100;
+	return (uint8_t)(((voltage - minV) / (maxV - minV)) * 100);
 }
 
 void loop()
@@ -422,7 +479,7 @@ void loop()
 
 	// Battery empty - send 0% and stop transmitting to preserve remaining capacity.
 	// Guard > 2.5V: only trigger on a real dying battery; <2.5V is USB-only / no battery.
-	if (batteryVoltage <= BATTERY_CUTOFF_V && batteryVoltage > 2.5f) {
+	if (batteryVoltage <= (battMinMv / 1000.0f) && batteryVoltage > 2.5f) {
 		Serial.println("Battery empty! Sending 0% and shutting down.");
 		send(msgBatt.set(batteryVoltage, 2));
 		sendBatteryLevel(0);
@@ -453,8 +510,10 @@ void loop()
 	Serial.print(" TX=");
 	Serial.println(txPower);
 
-	// Report current sleep interval to gateway (also lets gateway discover/set it)
+	// Report current adjustable settings to gateway (allows controller to read/set them)
 	send(msgInterval.set((uint16_t)(sleepTimeMs / 1000)));
+	send(msgBattMin.set(battMinMv));
+	send(msgBattMax.set(battMaxMv));
 
 	// Also send battery level to controller
 	sendBatteryLevel(batteryPercent);
