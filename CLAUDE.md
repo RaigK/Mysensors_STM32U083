@@ -17,7 +17,7 @@ PlatformIO CLI is not in PATH — always use the full path:
 # Upload to device (uses STM32CubeProgrammer CLI via ST-Link SWD)
 "C:/Users/raigk/.platformio/penv/Scripts/pio.exe" run -t upload
 
-# Monitor serial output (COM16 at 115200 baud)
+# Monitor serial output (COM9 at 115200 baud)
 "C:/Users/raigk/.platformio/penv/Scripts/pio.exe" device monitor
 
 # Clean build
@@ -83,7 +83,7 @@ Sensor (HDC1080 on I2C2):
 
 Battery ADC: PA0 (2:1 voltage divider, measures up to 6.6V). Uses factory-calibrated VREFINT to measure actual VDDA at runtime instead of assuming 3.3V. Requires `analogReadResolution(12)` — STM32duino defaults to 10-bit. The calibration flow: `readVDDA()` reads the internal `AVREF` channel and computes VDDA from `VREFINT_CAL_ADDR`/`VREFINT_CAL_VREF` factory constants, then `readBatteryVoltage()` uses that VDDA to scale the PA0 ADC reading.
 
-Battery chemistry: **Lithium Thionyl Chloride (Li-SOCl2)**, 3.6V nominal. Battery percentage mapped to 2.85–3.6V range. At or below `BATTERY_CUTOFF_V` (2.85V), the node sends a final battery voltage + 0% level and enters indefinite sleep to preserve remaining capacity — no further sensor or signal transmissions.
+Battery chemistry: **Lithium Thionyl Chloride (Li-SOCl2)**, 3.6V nominal. Battery percentage is mapped between `battMinMv` (cutoff, default 3100 mV) and `battMaxMv` (full, default 3600 mV). Both thresholds are runtime-adjustable via the gateway (children 6 and 7) and persisted to EEPROM. At or below the cutoff voltage (and above 2.5V as USB-only guard), the node sends a final battery voltage + 0% level and enters indefinite sleep to preserve remaining capacity — no further sensor or signal transmissions.
 
 ## Key Implementation Details
 
@@ -131,7 +131,8 @@ Wake-up sources: RTC Alarm A or GPIO interrupts (for radio IRQ).
 - **IMPORTANT**: RTC wake-up timer (WUTF) does NOT work on STM32U0 - use RTC Alarm A instead
 - RTC Alarm uses EXTI line 17 (rising edge trigger)
 - Internal wake-up line: `PWR->CR3 |= PWR_CR3_EIWUL`
-- Debug disabled during sleep: `DBGMCU->CR = 0`
+- DBGMCU handling in `hwPrepareSleep()` is **conditional on `MY_DEBUG`**: if defined, `HAL_DBGMCU_EnableDBGStopMode()` keeps SWD alive in STOP2 (~1 µA extra cost, enables upload without reset); if not defined, `DBGMCU->CR = 0` saves ~1 µA (production builds)
+- PA13/PA14 are **always** kept in SWD AF mode in `hwConfigureGpioLowPower()` regardless of `MY_DEBUG` so the SWD pins themselves never go analog
 
 ### MySensors Configuration
 
@@ -147,7 +148,8 @@ Key defines in `src/main.cpp`:
 - `MY_SPLASH_SCREEN_DISABLED` - skips MySensors boot banner
 - `MY_SMART_SLEEP_WAIT_DURATION_MS 0` - disable smart sleep for faster wake cycles
 - `MY_SLEEP_TRANSPORT_RECONNECT_TIMEOUT_MS 0` - skip transport reconnect delay on wake
-- `SLEEP_TIME 60000` - sleep interval between sensor reports (ms)
+- `SLEEP_TIME_DEFAULT_MS 60000` - default sleep interval; runtime value `sleepTimeMs` is loaded from EEPROM (pos 200–201) on boot and overrides this default
+- **`POWER_RUN_LOW_POWER` breaks serial**: at 2 MHz MSI, USART2 reinit after clock restore fails silently — no output on monitor. Always use `POWER_RUN_NORMAL` (16 MHz) when `MY_DEBUG` or serial output is needed. Switch to `POWER_RUN_LOW_POWER` only with `MY_DISABLED_SERIAL`.
 
 ### ATC Signal Reporting
 
@@ -166,6 +168,17 @@ Requires `MY_SIGNAL_REPORT_ENABLED` and `MY_RFM69_ATC_TARGET_RSSI_DBM (-70)` def
 | 2 | S_MULTIMETER | Battery voltage |
 | 3 | S_SOUND | RX RSSI (dBm) |
 | 4 | S_SOUND | TX Power level (dBm) |
+| 5 | S_CUSTOM / V_VAR1 | Sleep interval (seconds) — gateway-adjustable, EEPROM 200–201, range 10–3600, default 60 |
+| 6 | S_CUSTOM / V_VAR1 | Battery cutoff voltage (mV) — gateway-adjustable, EEPROM 202–203, range 2000–4200, default 3100 |
+| 7 | S_CUSTOM / V_VAR1 | Battery full voltage (mV) — gateway-adjustable, EEPROM 204–205, range 2000–4200, default 3600 |
+
+**Gateway SET commands** (node ID 11):
+```
+11;5;1;0;24;120    → set sleep interval to 120 s
+11;6;1;0;24;2850   → set battery cutoff to 2.85 V
+11;7;1;0;24;3700   → set battery full to 3.70 V
+```
+Values are validated, clamped, persisted to EEPROM, and echoed back. They survive power cycles. CHILD_ID_BATT_MIN rejects values ≥ battMaxMv; CHILD_ID_BATT_MAX rejects values ≤ battMinMv.
 
 ### Battery ADC Implementation Notes
 
