@@ -26,8 +26,9 @@
 #define STM32_POWER_CONFIG_H
 
 // ======================== Run Mode Definitions ========================
-#define POWER_RUN_NORMAL      0  // Normal run: 16 MHz HSI, normal regulator
-#define POWER_RUN_LOW_POWER   1  // Low Power Run: 2 MHz MSI, LP regulator
+#define POWER_RUN_NORMAL      0  // Normal run:     16 MHz HSI, normal regulator
+#define POWER_RUN_LOW_POWER   1  // Low Power Run:   2 MHz MSI, LP regulator
+#define POWER_RUN_MEDIUM      2  // Medium run:      4 MHz MSI, normal regulator (serial-safe)
 
 // ======================== Sleep Mode Definitions ========================
 #define POWER_SLEEP_SLEEP     0  // Sleep: CPU halted, peripherals running
@@ -55,13 +56,17 @@
 
 // ======================== Clock Configuration ========================
 #if MY_STM32_RUN_MODE == POWER_RUN_LOW_POWER
-// Low Power Run: 2 MHz MSI
+// Low Power Run: 2 MHz MSI (LP regulator)
 #define POWER_SYSCLK_FREQ     2000000UL
+#define POWER_VOLTAGE_SCALE   PWR_REGULATOR_VOLTAGE_SCALE2
+#elif MY_STM32_RUN_MODE == POWER_RUN_MEDIUM
+// Medium Run: 4 MHz MSI (normal regulator, serial-safe)
+#define POWER_SYSCLK_FREQ     4000000UL
 #define POWER_VOLTAGE_SCALE   PWR_REGULATOR_VOLTAGE_SCALE2
 #else
 // Normal Run: 16 MHz HSI
 #define POWER_SYSCLK_FREQ     16000000UL
-#define POWER_VOLTAGE_SCALE   PWR_REGULATOR_VOLTAGE_SCALE2
+#define POWER_VOLTAGE_SCALE   PWR_REGULATOR_VOLTAGE_SCALE1
 #endif
 
 // ======================== Debug Helpers ========================
@@ -76,6 +81,8 @@
 static inline const char* power_run_mode_name(void) {
 #if MY_STM32_RUN_MODE == POWER_RUN_LOW_POWER
     return "Low Power Run (2 MHz)";
+#elif MY_STM32_RUN_MODE == POWER_RUN_MEDIUM
+    return "Medium Run (4 MHz)";
 #else
     return "Normal Run (16 MHz)";
 #endif

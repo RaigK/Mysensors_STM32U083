@@ -25,10 +25,11 @@
  */
 
 // ======================== Power Mode Configuration ========================
-// Run modes: POWER_RUN_NORMAL (16 MHz), POWER_RUN_LOW_POWER (2 MHz)
+// Run modes: POWER_RUN_NORMAL (16 MHz HSI), POWER_RUN_MEDIUM (4 MHz MSI, serial-safe),
+//            POWER_RUN_LOW_POWER (2 MHz MSI, requires MY_DISABLED_SERIAL)
 // Sleep modes: POWER_SLEEP_SLEEP, POWER_SLEEP_LP_SLEEP, POWER_SLEEP_STOP0,
 //              POWER_SLEEP_STOP1, POWER_SLEEP_STOP2, POWER_SLEEP_STANDBY
-#define MY_STM32_RUN_MODE    POWER_RUN_NORMAL   // 16 MHz HSI (use LOW_POWER when MY_DISABLED_SERIAL)
+#define MY_STM32_RUN_MODE    POWER_RUN_MEDIUM      // 4 MHz MSI — serial-safe, ~4× less than 16 MHz
 #define MY_STM32_SLEEP_MODE  POWER_SLEEP_STOP2     // Stop 2 mode (~1-3 µA)
 #include "stm32_power_config.h"
 
@@ -94,8 +95,7 @@
 #define VOLTAGE_DIVIDER_RATIO 2.0
 // ADC resolution (12-bit)
 #define ADC_MAX_VALUE 4095
-// Fixed VDDA: MCU/ADC powered by 2.8V LDO (regulated, no need to measure)
-#define VDD_LDO_VOLTAGE 2.8f
+// VDDA measured at runtime via VREFINT factory calibration (see readVDDA())
 
 // HDC1080 sensor
 ClosedCube_HDC1080 hdc1080;
@@ -104,6 +104,7 @@ ClosedCube_HDC1080 hdc1080;
 static uint32_t sleepTimeMs = SLEEP_TIME_DEFAULT_MS;
 static uint16_t battMinMv   = BATT_MIN_DEFAULT_MV;
 static uint16_t battMaxMv   = BATT_MAX_DEFAULT_MV;
+static bool firstLoop = true;
 
 // MySensors messages
 MyMessage msgTemp(CHILD_ID_TEMP,     V_TEMP);
@@ -116,7 +117,7 @@ MyMessage msgBattMin(CHILD_ID_BATT_MIN,  V_VAR1);
 MyMessage msgBattMax(CHILD_ID_BATT_MAX,  V_VAR1);
 
 // Custom system clock configuration with power mode support
-// Supports: Normal Run (16 MHz HSI) or Low Power Run (2 MHz MSI)
+// Supports: Normal Run (16 MHz HSI), Medium Run (4 MHz MSI), Low Power Run (2 MHz MSI)
 extern "C" void SystemClock_Config(void)
 {
 	RCC_OscInitTypeDef RCC_OscInitStruct = {};
@@ -154,6 +155,36 @@ extern "C" void SystemClock_Config(void)
 
 	// Enter Low Power Run mode (must be ≤ 2 MHz)
 	HAL_PWREx_EnableLowPowerRunMode();
+
+#elif MY_STM32_RUN_MODE == POWER_RUN_MEDIUM
+	// ==================== Medium Run Mode (4 MHz HCLK from 16 MHz HSI / 4) ====================
+	// Keep HSI as the SYSCLK source (avoids MSI switch issues on STM32U0) and divide
+	// the AHB bus by 4 → HCLK = PCLK1 = 4 MHz.  Serial-safe: 115200 baud BRR = 35,
+	// error < 1 %.  SystemCoreClock (HCLK) reflects the actual CPU frequency.
+	if (READ_BIT(PWR->SR2, PWR_SR2_REGLPF)) {
+		HAL_PWREx_DisableLowPowerRunMode();
+	}
+
+	HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE2);
+
+	// Enable HSI (16 MHz) and LSI for RTC — same oscillators as NORMAL mode
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_LSI;
+	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+	RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+	RCC_OscInitStruct.LSIState = RCC_LSI_ON;
+	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_OFF;
+	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+		Error_Handler();
+	}
+
+	// SYSCLK = HSI 16 MHz, HCLK = SYSCLK / 4 = 4 MHz, PCLK1 = 4 MHz
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1;
+	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV4;   // 16 / 4 = 4 MHz HCLK
+	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK) {
+		Error_Handler();
+	}
 
 #else
 	// ==================== Normal Run Mode (16 MHz HSI) ====================
@@ -217,8 +248,11 @@ void setup()
 
 #ifndef MY_DISABLED_SERIAL
 	// Print actual clock speed and power mode info
+	// SystemCoreClock = HCLK (CPU bus clock), updated by HAL_RCC_ClockConfig.
+	// In MEDIUM mode SYSCLK = 16 MHz HSI but HCLK = 4 MHz (AHB /4), so use
+	// SystemCoreClock here instead of HAL_RCC_GetSysClockFreq() (which returns SYSCLK).
 	Serial.print("System clock: ");
-	Serial.print(HAL_RCC_GetSysClockFreq() / 1000000);
+	Serial.print(SystemCoreClock / 1000000);
 	Serial.println(" MHz");
 #if POWER_DEBUG_ENABLED
 	Serial.print("Run mode: ");
@@ -327,17 +361,17 @@ void receive(const MyMessage &message)
 		if (raw < 2000) raw = 2000;
 		if (raw > 4200) raw = 4200;
 		uint16_t v = (uint16_t)raw;
-		if (v >= battMaxMv) {
-#ifndef MY_DISABLED_SERIAL
-			Serial.println("Batt cutoff must be < full voltage — rejected");
-#endif
-			return;
-		}
+		// Each threshold is validated independently; the caller is responsible
+		// for keeping min < max. Cross-checking against battMaxMv was removed
+		// because the controller may send the two values in any order, and a
+		// strict ordering check would silently reject the first one to arrive.
 		battMinMv = v;
 		saveState(EEPROM_BATT_MIN_HI, (uint8_t)(v >> 8));
 		saveState(EEPROM_BATT_MIN_LO, (uint8_t)(v & 0xFF));
 #ifndef MY_DISABLED_SERIAL
-		Serial.print("Batt cutoff -> "); Serial.print(v); Serial.println(" mV");
+		Serial.print("Batt cutoff -> "); Serial.print(v); Serial.print(" mV (readback: ");
+		uint16_t rb = ((uint16_t)loadState(EEPROM_BATT_MIN_HI) << 8) | loadState(EEPROM_BATT_MIN_LO);
+		Serial.print(rb); Serial.println(rb == v ? " OK)" : " FAIL!)");
 #endif
 		send(msgBattMin.set(v));
 
@@ -345,17 +379,13 @@ void receive(const MyMessage &message)
 		if (raw < 2000) raw = 2000;
 		if (raw > 4200) raw = 4200;
 		uint16_t v = (uint16_t)raw;
-		if (v <= battMinMv) {
-#ifndef MY_DISABLED_SERIAL
-			Serial.println("Batt full must be > cutoff voltage — rejected");
-#endif
-			return;
-		}
 		battMaxMv = v;
 		saveState(EEPROM_BATT_MAX_HI, (uint8_t)(v >> 8));
 		saveState(EEPROM_BATT_MAX_LO, (uint8_t)(v & 0xFF));
 #ifndef MY_DISABLED_SERIAL
-		Serial.print("Batt full -> "); Serial.print(v); Serial.println(" mV");
+		Serial.print("Batt full   -> "); Serial.print(v); Serial.print(" mV (readback: ");
+		uint16_t rb = ((uint16_t)loadState(EEPROM_BATT_MAX_HI) << 8) | loadState(EEPROM_BATT_MAX_LO);
+		Serial.print(rb); Serial.println(rb == v ? " OK)" : " FAIL!)");
 #endif
 		send(msgBattMax.set(v));
 	}
@@ -430,11 +460,25 @@ static uint32_t readADC_U0(uint32_t channel)
 	return value;
 }
 
+// Measure actual VDDA using VREFINT factory calibration.
+// VDDA = VREFINT_CAL_VREF_mV * VREFINT_CAL_VALUE / ADC_reading_of_VREFINT
+static float readVDDA()
+{
+	ADC1_COMMON->CCR |= ADC_CCR_VREFEN;    // enable internal VREFINT path
+	HAL_Delay(1);                           // wait ≥12 µs for VREFINT startup
+	uint32_t raw = readADC_U0(ADC_CHANNEL_VREFINT);
+	ADC1_COMMON->CCR &= ~ADC_CCR_VREFEN;
+	if (raw == 0) return 3.0f;             // fallback if ADC failed
+	uint16_t cal = *VREFINT_CAL_ADDR;     // factory value measured at VREFINT_CAL_VREF mV
+	return ((float)VREFINT_CAL_VREF * (float)cal) / ((float)raw * 1000.0f);
+}
+
 float readBatteryVoltage()
 {
 	// PA0 = ADC1_IN4 (channel 4) on STM32U083, LQFP64 pin 14
+	float vdda = readVDDA();
 	uint32_t raw = readADC_U0(ADC_CHANNEL_4);
-	float voltage = ((float)raw / ADC_MAX_VALUE) * VDD_LDO_VOLTAGE * VOLTAGE_DIVIDER_RATIO;
+	float voltage = ((float)raw / ADC_MAX_VALUE) * vdda * VOLTAGE_DIVIDER_RATIO;
 
 #ifndef MY_DISABLED_SERIAL
 	Serial.print("ADC raw: ");
@@ -510,13 +554,31 @@ void loop()
 	Serial.print(" TX=");
 	Serial.println(txPower);
 
-	// Report current adjustable settings to gateway (allows controller to read/set them)
-	send(msgInterval.set((uint16_t)(sleepTimeMs / 1000)));
-	send(msgBattMin.set(battMinMv));
-	send(msgBattMax.set(battMaxMv));
+	// Report current parameter values only on first boot to initialize the controller.
+	// Never resend on wakeups: that would overwrite any value the user changed via the
+	// gateway between sleep cycles. Changes arrive via receive() while the node is awake.
+	if (firstLoop) {
+		send(msgInterval.set((uint16_t)(sleepTimeMs / 1000)));
+		send(msgBattMin.set(battMinMv));
+		send(msgBattMax.set(battMaxMv));
+		firstLoop = false;
+		// On first boot, wait 60 s so the user can push custom parameter SETs
+		// from the gateway before the node enters its regular sleep cycle.
+#ifndef MY_DISABLED_SERIAL
+		Serial.println("First boot: waiting 60s for parameter changes...");
+		Serial.flush();
+#endif
+		wait(60000);
+	}
 
 	// Also send battery level to controller
 	sendBatteryLevel(batteryPercent);
+
+	// Wait for any pending SET messages from the controller before sleeping.
+	// The controller may retry a failed delivery once it sees the node is active
+	// (from the temperature/battery messages above). Without this window, the
+	// node sleeps before the retry arrives and the user's change is lost.
+	wait(2000);
 
 	// Enter low power sleep (MCU STOP mode + radio sleep)
 	Serial.print("Sleeping ");
