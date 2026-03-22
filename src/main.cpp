@@ -262,13 +262,18 @@ void setup()
 #endif
 #endif
 
-	// Initialize I2C2 (PB10=SCL, PB11=SDA)
+	// Initialize I2C2 (PB10=SCL, PB11=SDA) at reduced clock for reliability
 	Wire.setSCL(I2C2_SCL_PIN);
 	Wire.setSDA(I2C2_SDA_PIN);
+	Wire.setClock(10000);  // 10 kHz
 	Wire.begin();
 
 	// Initialize HDC1080
 	hdc1080.begin(0x40);
+
+	// PB0: wake indicator — HIGH while active, LOW during sleep
+	pinMode(PB0, OUTPUT);
+	digitalWrite(PB0, HIGH);
 
 	// Configure battery ADC pin as analog input
 	// Note: analogRead() is NOT used — STM32duino analog.cpp has a bug on STM32U0:
@@ -528,6 +533,7 @@ void loop()
 		send(msgBatt.set(batteryVoltage, 2));
 		sendBatteryLevel(0);
 		Serial.flush();
+		digitalWrite(PB0, LOW);
 		sleep(0);
 		return;
 	}
@@ -586,7 +592,9 @@ void loop()
 	Serial.println("s...");
 	Serial.flush();
 
+	digitalWrite(PB0, LOW);
 	sleep(sleepTimeMs);
+	digitalWrite(PB0, HIGH);
 
 	Serial.println("Woke up");
 }

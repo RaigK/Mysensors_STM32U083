@@ -59,7 +59,8 @@ The STM32U0 series requires workarounds defined in `platformio.ini`:
 - Uses variant `STM32U0xx/U073R(8-B-C)(I-T)_U083RC(I-T)` from STM32duino core
 
 The `SystemClock_Config()` in `src/main.cpp` configures the actual runtime clock based on `MY_STM32_RUN_MODE`:
-- **Normal**: 16 MHz HSI, voltage scale 2
+- **Normal**: 16 MHz HSI, voltage scale 1
+- **Medium**: 16 MHz HSI with AHB/4 divider → 4 MHz HCLK, voltage scale 2 (serial-safe)
 - **Low Power Run**: 2 MHz MSI, LP regulator enabled
 
 ### Library Dependencies
@@ -89,13 +90,14 @@ Battery chemistry: **Lithium Thionyl Chloride (Li-SOCl2)**, 3.6V nominal. Batter
 
 ### Power Mode Configuration
 
-Compile-time defines in `src/main.cpp` select run and sleep modes. Include `stm32_power_config.h` after setting defines. Defaults: `POWER_RUN_NORMAL` (16 MHz) and `POWER_SLEEP_STOP1`.
+Compile-time defines in `src/main.cpp` select run and sleep modes. Include `stm32_power_config.h` after setting defines. Current defaults: `POWER_RUN_MEDIUM` (4 MHz) and `POWER_SLEEP_STOP2`.
 
 **Run Modes** (`MY_STM32_RUN_MODE`):
 | Mode | Clock | Current | Use Case |
 |------|-------|---------|----------|
 | `POWER_RUN_NORMAL` | 16 MHz HSI | ~3-5 mA | Normal operation, fast processing |
-| `POWER_RUN_LOW_POWER` | 2 MHz MSI | ~200-500 µA | Battery operation, slow processing OK |
+| `POWER_RUN_MEDIUM` | 4 MHz (HSI/4) | ~1-2 mA | Serial-safe battery operation (current default) |
+| `POWER_RUN_LOW_POWER` | 2 MHz MSI | ~200-500 µA | Lowest active power, breaks serial |
 
 **Sleep Modes** (`MY_STM32_SLEEP_MODE`):
 | Mode | Current | Wake Sources | Notes |
@@ -103,8 +105,8 @@ Compile-time defines in `src/main.cpp` select run and sleep modes. Include `stm3
 | `POWER_SLEEP_SLEEP` | ~1 mA | Any interrupt | Fast wake, peripherals on |
 | `POWER_SLEEP_LP_SLEEP` | ~100-200 µA | Any interrupt | Requires LPR mode (auto-forced) |
 | `POWER_SLEEP_STOP0` | ~10-20 µA | RTC, EXTI | Fast wake-up |
-| `POWER_SLEEP_STOP1` | ~5-10 µA | RTC, EXTI | Default, good balance |
-| `POWER_SLEEP_STOP2` | ~1-3 µA | RTC, EXTI | Lowest Stop power |
+| `POWER_SLEEP_STOP1` | ~5-10 µA | RTC, EXTI | Good balance |
+| `POWER_SLEEP_STOP2` | ~1-3 µA | RTC, EXTI | Lowest Stop power (current default) |
 | `POWER_SLEEP_STANDBY` | ~300 nA | RTC, WKUP pins | RAM lost, system resets |
 
 **Validation**: If `POWER_SLEEP_LP_SLEEP` is selected without `POWER_RUN_LOW_POWER`, the build auto-forces Low Power Run mode with a warning.
@@ -144,12 +146,19 @@ Key defines in `src/main.cpp`:
 - `MY_RFM69_TX_POWER_DBM (6)` - initial/max TX power in dBm before ATC adjusts down
 - `MY_NODE_ID 11` (static node ID)
 - `MY_DEBUG` for serial debug output (comment out for lowest power)
-- `MY_DISABLED_SERIAL` - disables MySensors serial output; however, the `Serial.begin()` call and initial `=== BOOT ===` message in `setup()` are **unconditional** and always execute regardless of this define
+- `MY_DISABLED_SERIAL` - disables MySensors serial output; however, the `Serial.begin()` call and initial `=== BOOT ===` message in `before()` are **unconditional** and always execute regardless of this define
 - `MY_SPLASH_SCREEN_DISABLED` - skips MySensors boot banner
 - `MY_SMART_SLEEP_WAIT_DURATION_MS 0` - disable smart sleep for faster wake cycles
 - `MY_SLEEP_TRANSPORT_RECONNECT_TIMEOUT_MS 0` - skip transport reconnect delay on wake
 - `SLEEP_TIME_DEFAULT_MS 60000` - default sleep interval; runtime value `sleepTimeMs` is loaded from EEPROM (pos 200–201) on boot and overrides this default
-- **`POWER_RUN_LOW_POWER` breaks serial**: at 2 MHz MSI, USART2 reinit after clock restore fails silently — no output on monitor. Always use `POWER_RUN_NORMAL` (16 MHz) when `MY_DEBUG` or serial output is needed. Switch to `POWER_RUN_LOW_POWER` only with `MY_DISABLED_SERIAL`.
+- **`POWER_RUN_LOW_POWER` breaks serial**: at 2 MHz MSI, USART2 reinit after clock restore fails silently — no output on monitor. Use `POWER_RUN_NORMAL` or `POWER_RUN_MEDIUM` when `MY_DEBUG` or serial output is needed. Switch to `POWER_RUN_LOW_POWER` only with `MY_DISABLED_SERIAL`.
+
+### before() Initialization
+
+`before()` runs before MySensors initializes. It:
+1. Enables DBGMCU clock and `HAL_DBGMCU_EnableDBGStopMode()` so SWD stays accessible immediately after boot
+2. Switches Serial from the default LPUART1 to USART2 on `PA_2_ALT1` (TX) / `PA_3_ALT1` (RX) at 115200 baud — call `Serial.end()` first to release LPUART1
+3. Prints `=== BOOT === (5s upload window)` and waits 5 seconds — a guaranteed SWD upload window after power-on, before the node enters sleep cycles. Remove the `delay(5000)` once firmware is stable.
 
 ### ATC Signal Reporting
 
@@ -178,7 +187,7 @@ Requires `MY_SIGNAL_REPORT_ENABLED` and `MY_RFM69_ATC_TARGET_RSSI_DBM (-70)` def
 11;6;1;0;24;2850   → set battery cutoff to 2.85 V
 11;7;1;0;24;3700   → set battery full to 3.70 V
 ```
-Values are validated, clamped, persisted to EEPROM, and echoed back. They survive power cycles. CHILD_ID_BATT_MIN rejects values ≥ battMaxMv; CHILD_ID_BATT_MAX rejects values ≤ battMinMv.
+Values are validated, clamped, persisted to EEPROM, and echoed back. They survive power cycles. Each threshold is validated independently (range only) — cross-validation against the other threshold was removed because the gateway may send them in any order. On first boot, the node reports its current values to the controller and waits 60 seconds for gateway parameter SETs before entering the regular sleep cycle.
 
 ### Battery ADC Implementation Notes
 

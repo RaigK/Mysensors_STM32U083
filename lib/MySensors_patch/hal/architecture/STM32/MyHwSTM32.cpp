@@ -417,9 +417,9 @@ static void hwConfigureGpioLowPower(void)
 	                      GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_15;
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-	// PORTB: Keep PB6 (RFM69 CS), PB10/PB11 (I2C2)
-	// Set unused: PB0, PB1, PB2, PB3, PB4, PB5, PB7, PB8, PB9, PB12-PB15
-	GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 |
+	// PORTB: Keep PB6 (RFM69 CS), PB10/PB11 (I2C2), PB0 (wake indicator, driven LOW before sleep)
+	// Set unused: PB1, PB2, PB3, PB4, PB5, PB7, PB8, PB9, PB12-PB15
+	GPIO_InitStruct.Pin = GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 |
 	                      GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_7 | GPIO_PIN_8 |
 	                      GPIO_PIN_9 | GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -502,6 +502,14 @@ static void hwRestoreAfterSleep(void)
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
 	GPIO_InitStruct.Alternate = GPIO_AF0_SPI1;
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	// Reinitialize PB0 (wake indicator) as output LOW — app code drives it HIGH after return
+	GPIO_InitStruct.Pin = GPIO_PIN_0;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);  // keep LOW until app drives HIGH
 
 	// Reinitialize RFM69 CS pin (PB6)
 	GPIO_InitStruct.Pin = GPIO_PIN_6;
