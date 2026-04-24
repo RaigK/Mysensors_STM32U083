@@ -3,5 +3,15 @@
   "version": "1.0.0",
   "description": "STM32U0 HAL patches for MySensors",
   "frameworks": "arduino",
-  "platforms": "ststm32"
+  "platforms": "ststm32",
+  "build": {
+    "srcDir": ".",
+    "srcFilter": [
+      "+<hal/**/*.cpp>",
+      "-<hal/crypto/**>"
+    ],
+    "flags": [
+      "-include hal/architecture/STM32/MyHwSTM32.h"
+    ]
+  }
 }

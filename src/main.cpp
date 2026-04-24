@@ -30,7 +30,7 @@
 // Sleep modes: POWER_SLEEP_SLEEP, POWER_SLEEP_LP_SLEEP, POWER_SLEEP_STOP0,
 //              POWER_SLEEP_STOP1, POWER_SLEEP_STOP2, POWER_SLEEP_STANDBY
 #define MY_STM32_RUN_MODE    POWER_RUN_MEDIUM      // 4 MHz MSI — serial-safe, ~4× less than 16 MHz
-#define MY_STM32_SLEEP_MODE  POWER_SLEEP_STOP2     // Stop 2 mode (~1-3 µA)
+#define MY_STM32_SLEEP_MODE  POWER_SLEEP_STOP1     // STOP1
 #include "stm32_power_config.h"
 
 // Enable debug prints (comment out for lowest power)
@@ -53,19 +53,21 @@
 #define MY_RFM69_CS_PIN PB6
 #define MY_RFM69_IRQ_PIN PA10
 #define MY_RFM69_IRQ_NUM PA10
-#define MY_NODE_ID 11
+// MY_NODE_ID not defined → auto-assign from gateway (stored in EEPROM by MySensors)
 #define MY_RFM69_SPI_SPEED (1*1000000ul)
 
 #include <MySensors.h>
 #include <Wire.h>
 #include "ClosedCube_HDC1080.h"
-
 // I2C2 pins for HDC1080
 #define I2C2_SDA_PIN PB11
 #define I2C2_SCL_PIN PB10
 
-// Default sleep interval between reports (milliseconds); overridden by gateway or EEPROM
+// Default sleep interval between reports (milliseconds); overridden by gateway via EEPROM
 #define SLEEP_TIME_DEFAULT_MS 60000UL  // 60 seconds
+
+// Status LED on PB0 — on during active, 1 Hz blink during first-boot 60s wait, off in sleep
+#define LED_PIN PB0
 
 // Child IDs
 #define CHILD_ID_TEMP     0
@@ -77,13 +79,18 @@
 #define CHILD_ID_BATT_MIN 6  // Gateway-adjustable battery cutoff voltage (mV, V_VAR1)
 #define CHILD_ID_BATT_MAX 7  // Gateway-adjustable battery full    voltage (mV, V_VAR1)
 
-// EEPROM positions (200+ are beyond MySensors internal range; big-endian uint16_t)
-#define EEPROM_INTERVAL_HI 200  // sleep interval  — high byte (seconds)
-#define EEPROM_INTERVAL_LO 201  //                 — low  byte
-#define EEPROM_BATT_MIN_HI 202  // battery cutoff  — high byte (millivolts)
-#define EEPROM_BATT_MIN_LO 203  //                 — low  byte
-#define EEPROM_BATT_MAX_HI 204  // battery full    — high byte (millivolts)
-#define EEPROM_BATT_MAX_LO 205  //                 — low  byte
+// MySensors user-state EEPROM positions for persistent config.
+// loadState(pos) / saveState(pos, val) operate on single bytes; uint16_t values
+// are stored as two consecutive bytes (little-endian).
+// Note: MySensors also writes to EEPROM on first boot (auto node ID, parent ID,
+// controller config). EEPROM only erases a flash page on GC (page full), not on
+// every write, so multiple writes per boot are safe in practice.
+#define EE_INTERVAL_LO  0   // sleep interval seconds, low  byte
+#define EE_INTERVAL_HI  1   // sleep interval seconds, high byte
+#define EE_BATT_MIN_LO  2   // battery cutoff mV, low  byte
+#define EE_BATT_MIN_HI  3   // battery cutoff mV, high byte
+#define EE_BATT_MAX_LO  4   // battery full   mV, low  byte
+#define EE_BATT_MAX_HI  5   // battery full   mV, high byte
 
 // Default Li-SOCl2 battery thresholds
 #define BATT_MIN_DEFAULT_MV 3100  // 3.1 V cutoff (above 2.8 V LDO dropout)
@@ -105,6 +112,24 @@ static uint32_t sleepTimeMs = SLEEP_TIME_DEFAULT_MS;
 static uint16_t battMinMv   = BATT_MIN_DEFAULT_MV;
 static uint16_t battMaxMv   = BATT_MAX_DEFAULT_MV;
 static bool firstLoop = true;
+
+// Pending EEPROM saves from receive() — actual flash write deferred to loop() to avoid
+// triggering a flash page erase while the RFM69 ISR could fire.  On the single-bank
+// STM32U0 the CPU cannot fetch instructions from flash while a page erase is running;
+// any interrupt vector fetch during that window stalls (and may hang) the CPU.
+static struct { bool interval : 1; bool battMin : 1; bool battMax : 1; } pendingSave = {};
+
+
+// EEPROM helpers — MySensors saveState/loadState work per-byte
+static uint16_t eeLoad16(uint8_t posLo)
+{
+	return (uint16_t)loadState(posLo) | ((uint16_t)loadState(posLo + 1) << 8);
+}
+static void eeSave16(uint8_t posLo, uint16_t val)
+{
+	saveState(posLo,     (uint8_t)(val & 0xFF));
+	saveState(posLo + 1, (uint8_t)(val >> 8));
+}
 
 // MySensors messages
 MyMessage msgTemp(CHILD_ID_TEMP,     V_TEMP);
@@ -161,7 +186,14 @@ extern "C" void SystemClock_Config(void)
 	// Keep HSI as the SYSCLK source (avoids MSI switch issues on STM32U0) and divide
 	// the AHB bus by 4 → HCLK = PCLK1 = 4 MHz.  Serial-safe: 115200 baud BRR = 35,
 	// error < 1 %.  SystemCoreClock (HCLK) reflects the actual CPU frequency.
-	if (READ_BIT(PWR->SR2, PWR_SR2_REGLPF)) {
+	//
+	// Use LPR control bit (not REGLPF status bit) to detect Low Power Run mode.
+	// REGLPF is set after ANY Stop mode exit (LP regulator was active in Stop), so
+	// checking it here would call DisableLowPowerRunMode() on every wake-up — and
+	// that function waits with HAL_GetTick() which is frozen after Stop exit (SysTick
+	// interrupt was suspended), causing an infinite loop. LPR is only set when we
+	// explicitly entered Low Power Run mode (2 MHz), which MEDIUM mode never does.
+	if (READ_BIT(PWR->CR1, PWR_CR1_LPR)) {
 		HAL_PWREx_DisableLowPowerRunMode();
 	}
 
@@ -177,6 +209,12 @@ extern "C" void SystemClock_Config(void)
 		Error_Handler();
 	}
 
+	// After Stop mode exit, STM32U0 defaults to MSI as system clock (STOPWUCK=0).
+	// We are on HSI, so set STOPWUCK=1 to select HSI as the Stop wakeup clock.
+	// This ensures that after any Stop exit, SYSCLK = HSI = 16 MHz immediately,
+	// so HCLK = 4 MHz and SystemClock_Config() is effectively a no-op on wake-up.
+	__HAL_RCC_WAKEUPSTOP_CLK_CONFIG(RCC_STOP_WAKEUPCLOCK_HSI);
+
 	// SYSCLK = HSI 16 MHz, HCLK = SYSCLK / 4 = 4 MHz, PCLK1 = 4 MHz
 	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1;
 	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
@@ -188,8 +226,8 @@ extern "C" void SystemClock_Config(void)
 
 #else
 	// ==================== Normal Run Mode (16 MHz HSI) ====================
-	// Exit Low Power Run mode if we're in it (after STOP wake-up)
-	if (READ_BIT(PWR->SR2, PWR_SR2_REGLPF)) {
+	// Check LPR control bit, not REGLPF status bit (see MEDIUM mode comment above).
+	if (READ_BIT(PWR->CR1, PWR_CR1_LPR)) {
 		HAL_PWREx_DisableLowPowerRunMode();
 	}
 
@@ -219,6 +257,33 @@ extern "C" void SystemClock_Config(void)
 #endif
 }
 
+// Custom HardFault handler — prints the stacked PC/LR so we can identify the crash site.
+// Cortex-M0+ stacks {R0,R1,R2,R3,R12,LR,PC,xPSR} on the MSP before entering the handler.
+// The naked wrapper passes SP (= address of that frame) to the C function without disturbing it.
+extern "C" void hard_fault_impl(uint32_t *frame)
+{
+	uint32_t pc  = frame[6];
+	uint32_t lr  = frame[5];
+	uint32_t r0  = frame[0];
+	uint32_t r12 = frame[4];
+	Serial.println("\n\n=== HARD FAULT ===");
+	Serial.print("PC : 0x"); Serial.println(pc,  HEX);
+	Serial.print("LR : 0x"); Serial.println(lr,  HEX);
+	Serial.print("R0 : 0x"); Serial.println(r0,  HEX);
+	Serial.print("R12: 0x"); Serial.println(r12, HEX);
+	Serial.flush();
+	while (1) {}
+}
+
+extern "C" __attribute__((naked)) void HardFault_Handler(void)
+{
+	__asm volatile (
+		"mov r0, sp                \n"
+		"ldr r1, =hard_fault_impl  \n"
+		"bx  r1                    \n"
+	);
+}
+
 void before()
 {
 	// Enable DBGMCU clock first (STM32U0-specific: RCC->DBGCFGR.DBGEN must be set
@@ -235,7 +300,22 @@ void before()
 	Serial.setRx(PA_3_ALT1);
 	Serial.begin(115200);
 	delay(100);
-	Serial.println("\n\n=== BOOT === (5s upload window)");
+	// Print reset cause before clearing flags — critical for diagnosing unexpected resets
+	{
+		uint32_t csr = RCC->CSR;
+		Serial.print("RST=0x"); Serial.print(csr >> 24, HEX);
+		if (csr & RCC_CSR_LPWRRSTF)  Serial.print(" LPWR");   // illegal stop/standby entry
+		if (csr & RCC_CSR_WWDGRSTF)  Serial.print(" WWDG");
+		if (csr & RCC_CSR_IWDGRSTF)  Serial.print(" IWDG");
+		if (csr & RCC_CSR_SFTRSTF)   Serial.print(" SFT");    // NVIC_SystemReset()
+		if (csr & RCC_CSR_PWRRSTF)   Serial.print(" PWR");    // POR/BOR
+		if (csr & RCC_CSR_PINRSTF)   Serial.print(" PIN");    // NRST pin
+		if (csr & RCC_CSR_OBLRSTF)   Serial.print(" OBL");
+		Serial.println();
+		RCC->CSR |= RCC_CSR_RMVF;  // clear all reset flags for next boot
+	}
+
+	Serial.println("=== BOOT === (5s upload window)");
 	// No Serial.flush() here — it blocks forever if uart_init fails
 
 	// 5-second startup delay: guaranteed window for SWD upload
@@ -271,9 +351,9 @@ void setup()
 	// Initialize HDC1080
 	hdc1080.begin(0x40);
 
-	// PB0: wake indicator — HIGH while active, LOW during sleep
-	pinMode(PB0, OUTPUT);
-	digitalWrite(PB0, HIGH);
+	// Status LED
+	pinMode(LED_PIN, OUTPUT);
+	digitalWrite(LED_PIN, LOW);
 
 	// Configure battery ADC pin as analog input
 	// Note: analogRead() is NOT used — STM32duino analog.cpp has a bug on STM32U0:
@@ -282,40 +362,24 @@ void setup()
 	// We use direct HAL calls in readADC_U0() instead.
 	pinMode(BATTERY_ADC_PIN, INPUT_ANALOG);
 
-	// Load persisted settings from EEPROM (big-endian uint16_t, positions 200-205)
+	// Load persisted settings from EEPROM (MySensors user state).
+	// Uninitialized bytes read as 0xFF; range checks detect first boot.
 	{
-		uint8_t hi, lo;
 		uint16_t v;
+		v = eeLoad16(EE_INTERVAL_LO);
+		if (v >= 10 && v <= 3600) sleepTimeMs = (uint32_t)v * 1000UL;
 
-		// Sleep interval [10, 3600] seconds
-		hi = loadState(EEPROM_INTERVAL_HI);
-		lo = loadState(EEPROM_INTERVAL_LO);
-		v  = ((uint16_t)hi << 8) | lo;
-		if (v >= 10 && v <= 3600) {
-			sleepTimeMs = (uint32_t)v * 1000UL;
-		}
+		v = eeLoad16(EE_BATT_MIN_LO);
+		if (v >= 2000 && v <= 4200) battMinMv = v;
 
-		// Battery cutoff voltage [2000, 4200] mV
-		hi = loadState(EEPROM_BATT_MIN_HI);
-		lo = loadState(EEPROM_BATT_MIN_LO);
-		v  = ((uint16_t)hi << 8) | lo;
-		if (v >= 2000 && v <= 4200) {
-			battMinMv = v;
-		}
-
-		// Battery full voltage [2000, 4200] mV, must be > cutoff
-		hi = loadState(EEPROM_BATT_MAX_HI);
-		lo = loadState(EEPROM_BATT_MAX_LO);
-		v  = ((uint16_t)hi << 8) | lo;
-		if (v >= 2000 && v <= 4200 && v > battMinMv) {
-			battMaxMv = v;
-		}
+		v = eeLoad16(EE_BATT_MAX_LO);
+		if (v >= 2000 && v <= 4200) battMaxMv = v;
 	}
 
 #ifndef MY_DISABLED_SERIAL
-	Serial.print("Sleep: "); Serial.print(sleepTimeMs / 1000); Serial.print("s  ");
-	Serial.print("Batt: "); Serial.print(battMinMv); Serial.print("-");
-	Serial.print(battMaxMv); Serial.println(" mV");
+	Serial.print("EEPROM: interval="); Serial.print(sleepTimeMs / 1000);
+	Serial.print("s  batt="); Serial.print(battMinMv);
+	Serial.print("-"); Serial.print(battMaxMv); Serial.println(" mV");
 #endif
 }
 
@@ -350,49 +414,62 @@ void receive(const MyMessage &message)
 	long raw = message.getLong();
 	uint8_t sensor = message.getSensor();
 
+	// Update RAM immediately; EEPROM write is deferred to flushPendingSaves() in
+	// loop() to avoid a flash page erase while the RFM69 ISR could fire.
 	if (sensor == CHILD_ID_INTERVAL) {
 		if (raw < 10)   raw = 10;
 		if (raw > 3600) raw = 3600;
-		uint16_t v = (uint16_t)raw;
-		sleepTimeMs = (uint32_t)v * 1000UL;
-		saveState(EEPROM_INTERVAL_HI, (uint8_t)(v >> 8));
-		saveState(EEPROM_INTERVAL_LO, (uint8_t)(v & 0xFF));
+		sleepTimeMs = (uint32_t)(uint16_t)raw * 1000UL;
+		pendingSave.interval = true;
 #ifndef MY_DISABLED_SERIAL
-		Serial.print("Interval -> "); Serial.print(v); Serial.println("s");
+		Serial.print("Interval -> "); Serial.print((uint16_t)raw); Serial.println("s");
 #endif
-		send(msgInterval.set(v));
 
 	} else if (sensor == CHILD_ID_BATT_MIN) {
 		if (raw < 2000) raw = 2000;
 		if (raw > 4200) raw = 4200;
-		uint16_t v = (uint16_t)raw;
-		// Each threshold is validated independently; the caller is responsible
-		// for keeping min < max. Cross-checking against battMaxMv was removed
-		// because the controller may send the two values in any order, and a
-		// strict ordering check would silently reject the first one to arrive.
-		battMinMv = v;
-		saveState(EEPROM_BATT_MIN_HI, (uint8_t)(v >> 8));
-		saveState(EEPROM_BATT_MIN_LO, (uint8_t)(v & 0xFF));
+		battMinMv = (uint16_t)raw;
+		pendingSave.battMin = true;
 #ifndef MY_DISABLED_SERIAL
-		Serial.print("Batt cutoff -> "); Serial.print(v); Serial.print(" mV (readback: ");
-		uint16_t rb = ((uint16_t)loadState(EEPROM_BATT_MIN_HI) << 8) | loadState(EEPROM_BATT_MIN_LO);
-		Serial.print(rb); Serial.println(rb == v ? " OK)" : " FAIL!)");
+		Serial.print("Batt cutoff -> "); Serial.print(battMinMv); Serial.println(" mV");
 #endif
-		send(msgBattMin.set(v));
 
 	} else if (sensor == CHILD_ID_BATT_MAX) {
 		if (raw < 2000) raw = 2000;
 		if (raw > 4200) raw = 4200;
-		uint16_t v = (uint16_t)raw;
-		battMaxMv = v;
-		saveState(EEPROM_BATT_MAX_HI, (uint8_t)(v >> 8));
-		saveState(EEPROM_BATT_MAX_LO, (uint8_t)(v & 0xFF));
+		battMaxMv = (uint16_t)raw;
+		pendingSave.battMax = true;
 #ifndef MY_DISABLED_SERIAL
-		Serial.print("Batt full   -> "); Serial.print(v); Serial.print(" mV (readback: ");
-		uint16_t rb = ((uint16_t)loadState(EEPROM_BATT_MAX_HI) << 8) | loadState(EEPROM_BATT_MAX_LO);
-		Serial.print(rb); Serial.println(rb == v ? " OK)" : " FAIL!)");
+		Serial.print("Batt full   -> "); Serial.print(battMaxMv); Serial.println(" mV");
 #endif
-		send(msgBattMax.set(v));
+	}
+}
+
+// Write any parameter changes received via receive() to EEPROM.
+// Called from loop() when the radio stack is idle (outside wait()/transport calls),
+// so no interrupt can fire during the flash page erase.
+static void flushPendingSaves()
+{
+	if (pendingSave.interval) {
+		eeSave16(EE_INTERVAL_LO, (uint16_t)(sleepTimeMs / 1000));
+		pendingSave.interval = false;
+#ifndef MY_DISABLED_SERIAL
+		Serial.print("EEPROM: interval="); Serial.print(sleepTimeMs / 1000); Serial.println("s");
+#endif
+	}
+	if (pendingSave.battMin) {
+		eeSave16(EE_BATT_MIN_LO, battMinMv);
+		pendingSave.battMin = false;
+#ifndef MY_DISABLED_SERIAL
+		Serial.print("EEPROM: battMin="); Serial.print(battMinMv); Serial.println(" mV");
+#endif
+	}
+	if (pendingSave.battMax) {
+		eeSave16(EE_BATT_MAX_LO, battMaxMv);
+		pendingSave.battMax = false;
+#ifndef MY_DISABLED_SERIAL
+		Serial.print("EEPROM: battMax="); Serial.print(battMaxMv); Serial.println(" mV");
+#endif
 	}
 }
 
@@ -475,6 +552,10 @@ static float readVDDA()
 	ADC1_COMMON->CCR &= ~ADC_CCR_VREFEN;
 	if (raw == 0) return 3.0f;             // fallback if ADC failed
 	uint16_t cal = *VREFINT_CAL_ADDR;     // factory value measured at VREFINT_CAL_VREF mV
+	// ES0602 errata 2.1.2: VREFINT_CAL not programmed on early devices (date codes 333-345,
+	// first Nucleo/Discovery batch) — reads 0xFFFF instead of calibration value.
+	// Fall back to 3.0 V assumption rather than computing ~115 V VDDA.
+	if (cal == 0xFFFF || cal == 0) return 3.0f;
 	return ((float)VREFINT_CAL_VREF * (float)cal) / ((float)raw * 1000.0f);
 }
 
@@ -507,6 +588,8 @@ uint8_t voltageToBatteryPercent(float voltage)
 
 void loop()
 {
+	digitalWrite(LED_PIN, HIGH);  // LED on during active state
+
 	// Read HDC1080 sensor
 	float temperature = hdc1080.readTemperature();
 	float humidity = hdc1080.readHumidity();
@@ -532,8 +615,8 @@ void loop()
 		Serial.println("Battery empty! Sending 0% and shutting down.");
 		send(msgBatt.set(batteryVoltage, 2));
 		sendBatteryLevel(0);
+		digitalWrite(LED_PIN, LOW);
 		Serial.flush();
-		digitalWrite(PB0, LOW);
 		sleep(0);
 		return;
 	}
@@ -560,9 +643,18 @@ void loop()
 	Serial.print(" TX=");
 	Serial.println(txPower);
 
+	// Also send battery level to controller
+	sendBatteryLevel(batteryPercent);
+
 	// Report current parameter values only on first boot to initialize the controller.
 	// Never resend on wakeups: that would overwrite any value the user changed via the
 	// gateway between sleep cycles. Changes arrive via receive() while the node is awake.
+	//
+	// sendBatteryLevel() is called BEFORE the 60 s wait so it executes while transport
+	// state is clean. The MySensors echo mechanism (auto-reply to gateway SETs received
+	// during wait()) sends a transport frame after receive() returns, which leaves the
+	// transport in a subtly corrupted state — calling sendBatteryLevel() after wait()
+	// would hang the node.
 	if (firstLoop) {
 		send(msgInterval.set((uint16_t)(sleepTimeMs / 1000)));
 		send(msgBattMin.set(battMinMv));
@@ -574,11 +666,21 @@ void loop()
 		Serial.println("First boot: waiting 60s for parameter changes...");
 		Serial.flush();
 #endif
-		wait(60000);
+		// Brief 1 Hz blink pattern (6 toggles × 150 ms = 0.9 s) to signal parameter window.
+		// Uses delay() — blocks radio for <1 s, acceptable here.
+		for (int i = 0; i < 6; i++) {
+			digitalWrite(LED_PIN, i & 1 ? LOW : HIGH);
+			delay(150);
+		}
+		digitalWrite(LED_PIN, HIGH);
+		// Use 1 s slices instead of a single wait(60000): a gateway SET+echo during
+		// a long wait() can leave the RFM69 driver in a state where _process() never
+		// returns, hanging wait() indefinitely. Short slices let each call time out
+		// cleanly and reset the polling state before the next slice starts.
+		for (uint8_t i = 0; i < 60; i++) {
+			wait(1000);
+		}
 	}
-
-	// Also send battery level to controller
-	sendBatteryLevel(batteryPercent);
 
 	// Wait for any pending SET messages from the controller before sleeping.
 	// The controller may retry a failed delivery once it sees the node is active
@@ -587,14 +689,13 @@ void loop()
 	wait(2000);
 
 	// Enter low power sleep (MCU STOP mode + radio sleep)
+	digitalWrite(LED_PIN, LOW);  // LED off before sleep
 	Serial.print("Sleeping ");
 	Serial.print(sleepTimeMs / 1000);
 	Serial.println("s...");
 	Serial.flush();
 
-	digitalWrite(PB0, LOW);
 	sleep(sleepTimeMs);
-	digitalWrite(PB0, HIGH);
 
 	Serial.println("Woke up");
 }
