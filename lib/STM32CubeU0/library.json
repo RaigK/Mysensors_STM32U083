@@ -1,0 +1,15 @@
+{
+  "name": "STM32CubeU0",
+  "version": "1.2.0",
+  "description": "Vendored subset of STM32CubeU0 (CMSIS device + HAL) for STM32U083RC. Sourced from STMicroelectronics/cmsis_device_u0 and STMicroelectronics/stm32u0xx_hal_driver.",
+  "keywords": "stm32, stm32u0, hal, cmsis",
+  "license": "BSD-3-Clause",
+  "frameworks": "*",
+  "platforms": "ststm32",
+  "build": {
+    "flags": [
+      "-DUSE_HAL_DRIVER"
+    ],
+    "includeDir": "src"
+  }
+}
