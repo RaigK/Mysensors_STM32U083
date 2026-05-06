@@ -329,8 +329,9 @@ static bool hwSleepInit(void)
 	rtc.setClockSource(STM32RTC::LSI_CLOCK);
 	rtc.begin();
 
-	// Attach alarm callback for wake-up
-	rtc.attachInterrupt(alarmCallback, nullptr, STM32RTC::ALARM_A);
+	// Deactivate any stale WUT from a previous firmware run (RTC is battery-backed,
+	// survives firmware uploads; a stale armed WUT causes immediate wake from Stop).
+	HAL_RTCEx_DeactivateWakeUpTimer(rtc.getHandle());
 
 	rtcInitialized = true;
 	return true;
@@ -350,37 +351,32 @@ static bool hwSleepConfigureAlarm(uint32_t ms)
 	}
 
 	if (ms == 0) {
-		rtc.disableAlarm(STM32RTC::ALARM_A);
+		HAL_RTCEx_DeactivateWakeUpTimer(rtc.getHandle());
 		return true;
 	}
 
-	// Get current time and add sleep duration
-	uint8_t hours = rtc.getHours();
-	uint8_t minutes = rtc.getMinutes();
-	uint8_t seconds = rtc.getSeconds();
-
-	// Convert ms to seconds
 	uint32_t sleepSec = ms / 1000;
-	if (sleepSec == 0) {
-		sleepSec = 1;
-	}
-
-	// Calculate alarm time
-	uint32_t totalSec = hours * 3600UL + minutes * 60UL + seconds + sleepSec;
-	uint8_t alarmHours = (totalSec / 3600) % 24;
-	uint8_t alarmMinutes = (totalSec / 60) % 60;
-	uint8_t alarmSeconds = totalSec % 60;
+	if (sleepSec == 0) sleepSec = 1;
+	if (sleepSec > 65535) sleepSec = 65535;  // WUT counter is 16-bit
 
 #if !defined(MY_DISABLED_SERIAL)
-	Serial.print("WUT: ");
-	Serial.print(sleepSec);
-	Serial.println("s");
+	Serial.print("WUT: "); Serial.print(sleepSec); Serial.println("s");
 	Serial.flush();
 #endif
 
-	// Set alarm to match hours:minutes:seconds
-	rtc.setAlarmTime(alarmHours, alarmMinutes, alarmSeconds, STM32RTC::ALARM_A);
-	rtc.enableAlarm(rtc.MATCH_HHMMSS, STM32RTC::ALARM_A);
+	// Use RTC Wake-Up Timer (WUT) clocked from ck_spre (1 Hz) — 1-second resolution,
+	// plain countdown, no H:M:S or subsecond match quirks. Fires EXTI28 → NVIC IRQ 2.
+	// Counter = sleepSec - 1 → wake after sleepSec seconds (counter decrements to 0
+	// then wraps, setting WUTF).
+	HAL_RTCEx_DeactivateWakeUpTimer(rtc.getHandle());
+	if (HAL_RTCEx_SetWakeUpTimer_IT(rtc.getHandle(), sleepSec - 1,
+	                                RTC_WAKEUPCLOCK_CK_SPRE_16BITS, 0) != HAL_OK) {
+#if !defined(MY_DISABLED_SERIAL)
+		Serial.println("WUT setup FAILED");
+		Serial.flush();
+#endif
+		return false;
+	}
 
 	alarmTriggered = false;
 	return true;
@@ -425,11 +421,11 @@ static void hwConfigureGpioLowPower(void)
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 	// PORTC: All unused (PC13 is often user button, PC14/PC15 are LSE if used)
-	GPIO_InitStruct.Pin = GPIO_PIN_All;
+	GPIO_InitStruct.Pin = GPIO_PIN_ALL;
 	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
 	// PORTD: All unused
-	GPIO_InitStruct.Pin = GPIO_PIN_All;
+	GPIO_InitStruct.Pin = GPIO_PIN_ALL;
 	HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
 	// Disable GPIO clocks for unused ports
@@ -442,41 +438,51 @@ static void hwConfigureGpioLowPower(void)
  */
 static void hwPrepareSleep(void)
 {
-	// Configure unused GPIOs as analog to reduce leakage
-	hwConfigureGpioLowPower();
+#if defined(STM32U0xx)
+	// STM32U0: DBGMCU clock must be enabled via RCC->DBGCFGR.DBGEN before
+	// DBGMCU register writes take effect (unlike most other STM32 families).
+	// FORCE DBG_STOP=0 regardless of MY_DEBUG: enabling DBG in Stop keeps clocks
+	// running and may interfere with WUT wakeup on STM32U0. SWD upload still works
+	// through the 5-second boot window in before() or via Under-Reset upload.
+	__HAL_RCC_DBGMCU_CLK_ENABLE();
+	DBGMCU->CR = 0;
+	__HAL_RCC_DBGMCU_CLK_DISABLE();
 
-	// Disable peripheral clocks for lower power
+	// Arm EXTI28 (all RTC events on STM32U0) and internal-wake belt-and-suspenders.
+	// EXTI28 is a "direct" line — IMR28=1 is sufficient; RTSR/FTSR have no effect.
+	// NVIC IRQ 2 (RTC_TAMP_IRQn) is the actual wake vector; we enable it explicitly
+	// in case STM32RTC library hasn't already done so.
+	EXTI->IMR1 |= (1UL << 28);
+	PWR->CR3   |= PWR_CR3_EIWUL;
+	NVIC_ClearPendingIRQ(RTC_TAMP_IRQn);
+	NVIC_EnableIRQ(RTC_TAMP_IRQn);
+
+#if !defined(MY_DISABLED_SERIAL)
+	// Print BEFORE hwConfigureGpioLowPower sets PA2 (UART TX) to analog — any
+	// Serial.print after that is silently lost.
+	// RTC_CR bits: bit8=ALRAE, bit10=WUTE, bit12=ALRAIE, bit14=WUTIE
+	// RTC_SR bits: bit0=ALRAF, bit2=WUTF
+	Serial.print("PRE CR=0x");  Serial.print(RTC->CR, HEX);
+	Serial.print(" SR=0x");     Serial.print(RTC->SR, HEX);
+	Serial.print(" WUTR=");     Serial.print(RTC->WUTR);
+	Serial.print(" ICSR=0x");   Serial.print(RTC->ICSR, HEX);
+	Serial.print(" PREDIV=0x"); Serial.print(RTC->PRER, HEX);
+	Serial.print(" CR3=0x");    Serial.print(PWR->CR3, HEX);
+	Serial.print(" IMR28=");    Serial.print((EXTI->IMR1 >> 28) & 1);
+	Serial.print(" NVIC2=");    Serial.print(NVIC_GetEnableIRQ(RTC_TAMP_IRQn));
+	Serial.print(" t=");        Serial.print(rtc.getHours());
+	Serial.print(":");          Serial.print(rtc.getMinutes());
+	Serial.print(":");          Serial.println(rtc.getSeconds());
+	Serial.flush();
+#endif
+#endif
+
+	// GPIOs to analog and peripheral clocks off — DO THIS LAST (kills UART TX).
+	hwConfigureGpioLowPower();
 	__HAL_RCC_SPI1_CLK_DISABLE();
 	__HAL_RCC_I2C1_CLK_DISABLE();
 	__HAL_RCC_I2C2_CLK_DISABLE();
 	__HAL_RCC_ADC_CLK_DISABLE();
-
-#if defined(STM32U0xx)
-	// STM32U0: DBGMCU clock must be enabled via RCC->DBGCFGR.DBGEN before
-	// DBGMCU register writes take effect (unlike most other STM32 families).
-	__HAL_RCC_DBGMCU_CLK_ENABLE();
-#if defined(MY_DEBUG)
-	// Keep SWD alive in STOP2 so the programmer can connect without NRST.
-	// Costs ~1 µA. When MY_DEBUG is disabled (production), this is omitted
-	// and DBGMCU is zeroed instead, saving ~1 µA — but upload then requires
-	// the reset button (or the 5-second boot window from before()).
-	HAL_DBGMCU_EnableDBGStopMode();
-#else
-	// Production: disable all debug features during sleep to save ~1 µA.
-	// SWD upload still works via the 5-second window in before().
-	DBGMCU->CR = 0;
-	__HAL_RCC_DBGMCU_CLK_DISABLE();
-#endif
-
-	// Enable EXTI line 17 for RTC Alarm wake-up
-	// On STM32U0, RTC Alarm is on EXTI line 17 (rising edge)
-	EXTI->IMR1 |= (1UL << 17);   // Interrupt mask
-	EXTI->RTSR1 |= (1UL << 17);  // Rising edge trigger
-	EXTI->RPR1 = (1UL << 17);    // Clear pending
-
-	// Enable Internal Wake-up Line for RTC
-	PWR->CR3 |= PWR_CR3_EIWUL;
-#endif
 }
 
 /**
@@ -500,7 +506,7 @@ static void hwRestoreAfterSleep(void)
 	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-	GPIO_InitStruct.Alternate = GPIO_AF0_SPI1;
+	GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 	// Reinitialize PB0 (wake indicator) as output LOW — app code drives it HIGH after return
@@ -530,7 +536,7 @@ static void hwRestoreAfterSleep(void)
 	GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
 	GPIO_InitStruct.Pull = GPIO_PULLUP;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-	GPIO_InitStruct.Alternate = GPIO_AF6_I2C2;
+	GPIO_InitStruct.Alternate = GPIO_AF4_I2C2;
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 	// Reinitialize ADC pin (PA0)
@@ -577,12 +583,19 @@ static void hwEnterSleepMode(void)
 	HAL_ResumeTick();
 
 #elif MY_STM32_SLEEP_MODE == POWER_SLEEP_STOP1
-	// ==================== Stop 1 Mode (Default) ====================
-	// Lower power, LP regulator
-	// Current: ~5-10 µA
+	// ==================== Stop 0 Mode (manual — U0 HAL lacks wrapper) ==========
+	// LPMS=0b000 = Stop 0: main regulator stays ON, least disruption to peripherals.
+	// STM32U0 HAL only provides HAL_PWREx_EnterSTOP1Mode / EnterSTOP2Mode, so Stop 0
+	// must be entered by hand. If Stop 1's LP-regulator transition is what blocks
+	// WUT wake, Stop 0 should wake reliably.
 	HAL_SuspendTick();
 #if defined(STM32U0xx)
-	HAL_PWREx_EnterSTOP1Mode(PWR_STOPENTRY_WFI);
+	GPIOB->BRR = GPIO_PIN_0;  // LED OFF — goes back ON after WFI if we wake
+	MODIFY_REG(PWR->CR1, PWR_CR1_LPMS, 0);            // LPMS=000 (Stop 0)
+	SET_BIT(SCB->SCR, SCB_SCR_SLEEPDEEP_Msk);
+	__WFI();
+	CLEAR_BIT(SCB->SCR, SCB_SCR_SLEEPDEEP_Msk);
+	GPIOB->BSRR = GPIO_PIN_0;  // LED ON immediately after WFI returns
 #else
 	HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
 #endif
@@ -705,16 +718,22 @@ int8_t hwSleep(uint32_t ms)
 	hwRestoreAfterSleep();
 
 #if !defined(MY_DISABLED_SERIAL)
-	Serial.println("Woke");
+	Serial.print("POST SR=0x"); Serial.print(RTC->SR, HEX);
+	Serial.print(" alrm=");     Serial.print(alarmTriggered);
+	Serial.print(" t=");        Serial.print(rtc.getHours());
+	Serial.print(":");          Serial.print(rtc.getMinutes());
+	Serial.print(":");          Serial.println(rtc.getSeconds());
 	Serial.flush();
 #endif
 
 #if MY_STM32_SLEEP_MODE != POWER_SLEEP_STANDBY
-	// Disable alarm after wake-up
-	rtc.disableAlarm(STM32RTC::ALARM_A);
+	// Disable WUT and clear its flag so it doesn't re-arm before next sleep.
+	HAL_RTCEx_DeactivateWakeUpTimer(rtc.getHandle());
+	WRITE_REG(RTC->SCR, RTC_SCR_CWUTF);
+	__HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
 #endif
 
-	return alarmTriggered ? MY_WAKE_UP_BY_TIMER : MY_WAKE_UP_BY_TIMER;
+	return MY_WAKE_UP_BY_TIMER;
 }
 
 int8_t hwSleep(const uint8_t interrupt, const uint8_t mode, uint32_t ms)
@@ -809,8 +828,10 @@ int8_t hwSleep(const uint8_t interrupt1, const uint8_t mode1,
 	}
 
 #if MY_STM32_SLEEP_MODE != POWER_SLEEP_STANDBY
-	// Disable alarm
-	rtc.disableAlarm(STM32RTC::ALARM_A);
+	// Disable WUT and clear its flag
+	HAL_RTCEx_DeactivateWakeUpTimer(rtc.getHandle());
+	WRITE_REG(RTC->SCR, RTC_SCR_CWUTF);
+	__HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
 #endif
 
 	// Determine wake-up source

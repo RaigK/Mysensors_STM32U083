@@ -1,0 +1,12 @@
+{
+  "name": "arduino_compat",
+  "version": "0.1.0",
+  "description": "Minimal Arduino API shim over STM32CubeU0 HAL. Not a full Arduino core — only the surface MySensors/RFM69/HDC1080 need.",
+  "keywords": "arduino, stm32, cubeu0, shim",
+  "license": "MIT",
+  "frameworks": "*",
+  "platforms": "ststm32",
+  "dependencies": {
+    "STM32CubeU0": "*"
+  }
+}
