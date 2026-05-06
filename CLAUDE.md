@@ -8,11 +8,14 @@ MySensors sensor node implementation for STM32U083RC microcontroller with RFM69 
 
 ## Build Commands
 
-PlatformIO CLI is not in PATH — always use the full path:
+PlatformIO CLI is not in PATH — always use the full path. The project has **two build environments** (see Dual-Build Architecture below); `stm32u083` is the default and the production target.
 
 ```bash
-# Build the project
+# Build the project (default env: stm32u083 — Arduino/STM32duino)
 "C:/Users/raigk/.platformio/penv/Scripts/pio.exe" run
+
+# Build the bare-metal cube env (no Arduino, vendored STM32CubeU0 HAL)
+"C:/Users/raigk/.platformio/penv/Scripts/pio.exe" run -e stm32u083_cube
 
 # Upload to device (uses STM32CubeProgrammer CLI via ST-Link SWD)
 "C:/Users/raigk/.platformio/penv/Scripts/pio.exe" run -t upload
@@ -42,6 +45,19 @@ cp 'C:/claude/Mysensors_STM32U083/lib/MySensors_patch/hal/architecture/STM32/MyH
 ```
 
 ## Architecture
+
+### Dual-Build Architecture
+
+Two PlatformIO environments live in `platformio.ini`, sharing a single `src/main.cpp`:
+
+- **`[env:stm32u083]`** — production build. Arduino framework via STM32duino (`Arduino_Core_STM32` `main` branch from Git). Uses `lib/MySensors_patch/` library overrides. **Must `lib_ignore` the cube env's libraries** (`STM32CubeU0, arduino_compat`) — without this, LDF pulls the vendored HAL into the Arduino build and `HAL_UART_MODULE_ENABLED` collides with STM32duino's HAL, breaking the build.
+- **`[env:stm32u083_cube]`** — bare-metal port (cubeu0-port branch). No Arduino framework. Uses vendored STM32CubeU0 HAL (`lib/STM32CubeU0/`) + a minimal Arduino API shim (`lib/arduino_compat/`) layered over it. Custom linker script at `ldscripts/STM32U083xx_FLASH.ld`. `build_src_filter = -<*> +<main.cpp>` so only `src/main.cpp` is compiled (other helper mains were removed in commit e6d4f57). `lib_ignore = STM32duino RTC` keeps the Arduino-only RTC library out of this env.
+
+The cube env exists to prove the firmware can run without STM32duino's runtime — useful for diagnosing whether sleep/clock issues come from MySensors HAL code or from the Arduino core. The Arduino env remains the production target.
+
+**Cube env STOP2 linker wrap**: `-Wl,--wrap=HAL_PWR_EnterSTOPMode` redirects every call to ST's HAL stop entry into `__wrap_HAL_PWR_EnterSTOPMode` (in `lib/arduino_compat/src/stop2_wrap.c`), which calls `HAL_PWREx_EnterSTOP2Mode()` instead. ST's `HAL_PWR_EnterSTOPMode` writes `LPMS=0` (Stop 0) regardless of its `Regulator` argument; the wrap is the only way to force Stop 2 without editing the libdeps copy of MyHwSTM32.cpp.
+
+**`lib/arduino_compat/`** is intentionally minimal — only the Arduino surface MySensors / RFM69 / HDC1080 actually use (Print/Stream/HardwareSerial/SPI/Wire/STM32RTC/EEPROM/digital/analog/interrupts/time + AVR `pgmspace` stub). It is **not** a full Arduino core. Its `init()` runs `HAL_Init() + SystemClock_Config()` and is invoked via MySensors' premain ctor. Do not add features beyond what the linker says is missing.
 
 ### Library Override Mechanism
 
