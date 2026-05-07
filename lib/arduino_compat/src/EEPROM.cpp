@@ -4,8 +4,13 @@
 
 EEPROMClass EEPROM;
 
-static constexpr uint32_t EE_FLASH_ADDR = 0x0801F800u;
-static constexpr uint32_t EE_PAGE_NUM   = 127u;           /* page 127 of bank 1 */
+/* Last 2 KB page of the 256 KB flash (page 127). The address and the page
+ * number must match — earlier this used 0x0801F800 (page 63) with EE_PAGE_NUM
+ * 127, so HAL_FLASHEx_Erase wiped page 127 while HAL_FLASH_Program targeted
+ * page 63. The first save into virgin flash succeeded, every subsequent save
+ * silently failed on cells that needed to flip 0→1. */
+static constexpr uint32_t EE_FLASH_ADDR = 0x0803F800u;    /* start of page 127 */
+static constexpr uint32_t EE_PAGE_NUM   = 127u;           /* last page of bank 1 */
 
 void EEPROMClass::load_()
 {

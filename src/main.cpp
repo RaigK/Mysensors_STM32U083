@@ -30,15 +30,16 @@
 // Sleep modes: POWER_SLEEP_SLEEP, POWER_SLEEP_LP_SLEEP, POWER_SLEEP_STOP0,
 //              POWER_SLEEP_STOP1, POWER_SLEEP_STOP2, POWER_SLEEP_STANDBY
 #define MY_STM32_RUN_MODE    POWER_RUN_MEDIUM      // 4 MHz MSI — serial-safe, ~4× less than 16 MHz
-#define MY_STM32_SLEEP_MODE  POWER_SLEEP_STOP1     // STOP1
+#define MY_STM32_SLEEP_MODE  POWER_SLEEP_STOP2     // STOP1
 #include "stm32_power_config.h"
 
 // Enable debug prints (comment out for lowest power)
-#define MY_DEBUG
+//#define MY_DEBUG
 #define MY_SPLASH_SCREEN_DISABLED
-// #define MY_DISABLED_SERIAL
+#define MY_DISABLED_SERIAL
 #define MY_SMART_SLEEP_WAIT_DURATION_MS 0
 #define MY_SLEEP_TRANSPORT_RECONNECT_TIMEOUT_MS 0
+#define MY_SLEEP_HANDLER  // we provide our own sleepHandler() below
 
 // Enable signal report functionalities
 #define MY_SIGNAL_REPORT_ENABLED
@@ -57,6 +58,7 @@
 #define MY_RFM69_SPI_SPEED (1*1000000ul)
 
 #include <MySensors.h>
+#include <SPI.h>
 #include <Wire.h>
 #include "ClosedCube_HDC1080.h"
 // I2C2 pins for HDC1080
@@ -98,7 +100,7 @@
 
 // Battery voltage ADC pin
 #define BATTERY_ADC_PIN PA0  // ADC1_IN4, LQFP64 pin 14
-// Voltage divider ratio: 2:1 (100k/100k), battery=3.2V → PA0=1.6V
+// Voltage divider ratio: 2:1 (1000k/1000k), battery=3.2V → PA0=1.6V
 #define VOLTAGE_DIVIDER_RATIO 2.0
 // ADC resolution (12-bit)
 #define ADC_MAX_VALUE 4095
@@ -112,6 +114,14 @@ static uint32_t sleepTimeMs = SLEEP_TIME_DEFAULT_MS;
 static uint16_t battMinMv   = BATT_MIN_DEFAULT_MV;
 static uint16_t battMaxMv   = BATT_MAX_DEFAULT_MV;
 static bool firstLoop = true;
+
+// Last RFM69 OPMODE seen after the radio-sleep workaround in sleepHandler().
+// 0x80 = SequencerOff | SLEEP (target).  Anything else (e.g. 0x84 = SequencerOff
+// | STANDBY) means the workaround failed and the radio is leaking ~1.2 mA in
+// sleep.  Printed on the next wake so we can see it without keeping serial on
+// during sleep.  0xFF = uninitialised (no sleep cycle has run yet).
+static volatile uint8_t lastRfm69SleepOpMode = 0xFF;
+static volatile uint8_t lastRfm69SleepRetries = 0;
 
 // Pending EEPROM saves from receive() — actual flash write deferred to loop() to avoid
 // triggering a flash page erase while the RFM69 ISR could fire.  On the single-bank
@@ -586,9 +596,187 @@ uint8_t voltageToBatteryPercent(float voltage)
 	return (uint8_t)(((voltage - minV) / (maxV - minV)) * 100);
 }
 
+// Manual SPI register access for RFM69. Used by sleepHandler() to re-assert
+// SLEEP mode after MySensors' RFM69_sleep() — see workaround comment there.
+// Mode 0, MSB first; bit7 of address: 0=read, 1=write.
+static uint8_t rfm69ReadReg(uint8_t addr)
+{
+	SPI.beginTransaction(SPISettings(MY_RFM69_SPI_SPEED, MSBFIRST, SPI_MODE0));
+	digitalWrite(MY_RFM69_CS_PIN, LOW);
+	SPI.transfer(addr & 0x7F);
+	uint8_t val = SPI.transfer(0x00);
+	digitalWrite(MY_RFM69_CS_PIN, HIGH);
+	SPI.endTransaction();
+	return val;
+}
+
+static void rfm69WriteReg(uint8_t addr, uint8_t val)
+{
+	SPI.beginTransaction(SPISettings(MY_RFM69_SPI_SPEED, MSBFIRST, SPI_MODE0));
+	digitalWrite(MY_RFM69_CS_PIN, LOW);
+	SPI.transfer(addr | 0x80);
+	SPI.transfer(val);
+	digitalWrite(MY_RFM69_CS_PIN, HIGH);
+	SPI.endTransaction();
+}
+
+// MySensors sleep hook — runs after transportDisable() (radio already asleep)
+// and before hwSleep() enters STOP. The mirror call happens on wake before
+// transportReInitialise(). Mirrors the patched HAL's hwConfigureGpioLowPower /
+// hwRestoreAfterSleep flow used in the Arduino env, adapted for cube env.
+//
+// Pins handled:
+//   PA0          analog        — battery ADC (1M/1M divider on PA0 bleeds
+//                                 ~1.65 µA at 3.3 V regardless of pin mode;
+//                                 negligible relative to other sleep paths.)
+//   PA2/PA3      analog        — USART2 TX/RX (releases internal pull-up on RX)
+//   PA5/PA7      output LOW    — SPI1 SCK/MOSI (defined state, no float)
+//   PA6          analog        — SPI1 MISO (driven by RFM69 in sleep, buffer off)
+//   PA10         analog        — RFM69 IRQ; not used as wake source (we wake on
+//                                 RTC alarm), so the input buffer can go off
+//   PA13/PA14    analog        — SWD (kills internal pulls + SWD probe leakage,
+//                                 ~350 µA savings; restored to AF on wake)
+//   PA1/4/8/9/11/12/15  analog — unused
+//   PB0          output LOW    — LED (already driven LOW by app code)
+//   PB6          output HIGH   — RFM69 CS (held high during sleep)
+//   PB10/PB11    analog        — I2C2 SCL/SDA (releases HDC1080 ext pull-ups)
+//   PB others    analog        — unused
+//   PC, PD       analog        — all unused
+//
+// DBG_STOP is disabled in STOP and re-enabled on wake so SWD live-debug still
+// works between sleep cycles (DBG_STOP costs ~1 mA on STM32U0 if left on).
+void sleepHandler(bool entering)
+{
+	if (entering) {
+		HAL_DBGMCU_DisableDBGStopMode();
+
+		// Workaround: MySensors' RFM69_sleep() leaves the chip in 0x84 (SequencerOff
+		// + STANDBY) on this RFM69HW module — writing SLEEP doesn't stick on its
+		// own. The empirically-verified pattern is: write SLEEP, then a follow-up
+		// read of OPMODE (which auto-wakes the chip to STANDBY, then the rising CS
+		// edge cleanly transitions STANDBY → SLEEP), then a few ms of stability
+		// before SPI.end() reconfigures the SCK/MOSI pins.
+		// Verified 2026-05-07: drops board sleep current from ~1.2 mA to ~28 µA.
+		// Verify+retry: read OPMODE back; if not 0x80 (SLEEP), retry. STANDBY
+		// (0x84) leaks ~1.2 mA, so failure is expensive — keep trying.
+		uint8_t op = 0;
+		uint8_t retries = 0;
+		for (; retries < 5; ++retries) {
+			rfm69WriteReg(0x01, 0x80);  // SequencerOff | LISTEN_OFF | SLEEP
+			(void)rfm69ReadReg(0x01);   // kick: auto-wake to STANDBY, CS↑ → SLEEP
+			delay(3);                   // let the transition settle
+			op = rfm69ReadReg(0x01);    // verify (this read also auto-wakes; the
+			                            // CS↑ at the end of the read drops it back
+			                            // to SLEEP if the previous write took)
+			if (op == 0x80) break;
+		}
+		lastRfm69SleepOpMode = op;
+		lastRfm69SleepRetries = retries;
+
+		Serial.flush();
+		Serial.end();
+		SPI.end();
+		Wire.end();
+
+		// Make sure the analog source switches inside ADC_CCR are off so they
+		// don't bleed standby current (VREFINT bandgap, VBAT divider, temp
+		// sensor). VREFEN is normally cleared in readVDDA(), TSEN/VBATEN are
+		// never enabled by us — defensive belt-and-braces.
+		ADC1_COMMON->CCR &= ~(ADC_CCR_VREFEN | ADC_CCR_TSEN | ADC_CCR_VBATEN);
+
+		__HAL_RCC_GPIOA_CLK_ENABLE();
+		__HAL_RCC_GPIOB_CLK_ENABLE();
+		__HAL_RCC_GPIOC_CLK_ENABLE();
+		__HAL_RCC_GPIOD_CLK_ENABLE();
+
+		GPIO_InitTypeDef g = {};
+		g.Pull  = GPIO_NOPULL;
+		g.Speed = GPIO_SPEED_FREQ_LOW;
+
+		// PA5/PA7 (SPI SCK/MOSI) → output LOW first, then mark them as drivers.
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5 | GPIO_PIN_7, GPIO_PIN_RESET);
+		g.Mode = GPIO_MODE_OUTPUT_PP;
+		g.Pin  = GPIO_PIN_5 | GPIO_PIN_7;
+		HAL_GPIO_Init(GPIOA, &g);
+
+		// All other PA pins → analog, *including* PA13/PA14 (SWD).  Keeping SWD
+		// in AF during sleep leaves PA13's ~40 kΩ pull-up and PA14's pull-down
+		// engaged, plus any ST-Link probe load — measured ~350 µA leakage with
+		// probe attached.  Setting them to analog kills both internal pulls and
+		// disconnects the SWD pads.  Flashing still works: STM32CubeProgrammer
+		// uses Under-Reset mode (NRST held low) which forces SWD active
+		// regardless of pin config.  PA13/PA14 are restored to AF on wake.
+		// PA10 (RFM69 IRQ) is included: we never wake on it (the radio is
+		// in OPMODE=SLEEP and won't fire DIO0 until reinitialised on wake),
+		// so disabling its input buffer saves a small amount of static draw.
+		g.Mode = GPIO_MODE_ANALOG;
+		g.Pin  = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 |
+		         GPIO_PIN_4 | GPIO_PIN_6 |
+		         GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10 |
+		         GPIO_PIN_11 | GPIO_PIN_12 |
+		         GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
+		HAL_GPIO_Init(GPIOA, &g);
+
+		// PB: PB0 stays output LOW (driven by app), PB6 stays output HIGH
+		// (RFM69 CS, last state preserved). All others → analog.
+		g.Pin  = GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 |
+		         GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_7 | GPIO_PIN_8 |
+		         GPIO_PIN_9 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12 |
+		         GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
+		HAL_GPIO_Init(GPIOB, &g);
+
+		// PC, PD entirely analog.
+		g.Pin = GPIO_PIN_ALL;
+		HAL_GPIO_Init(GPIOC, &g);
+		HAL_GPIO_Init(GPIOD, &g);
+
+		__HAL_RCC_GPIOC_CLK_DISABLE();
+		__HAL_RCC_GPIOD_CLK_DISABLE();
+
+		// Drop peripheral clocks the GPIO sweep already detached.
+		__HAL_RCC_USART2_CLK_DISABLE();
+		__HAL_RCC_SPI1_CLK_DISABLE();
+		__HAL_RCC_I2C2_CLK_DISABLE();
+		__HAL_RCC_ADC_CLK_DISABLE();
+		__HAL_RCC_DBGMCU_CLK_DISABLE();
+	} else {
+		// Wake path: re-init in the order callers expect to use them.
+		__HAL_RCC_DBGMCU_CLK_ENABLE();
+		HAL_DBGMCU_EnableDBGStopMode();
+
+		// Restore SWD pins (PA13=SWDIO, PA14=SWCLK) to alternate function
+		// so an attached debug probe can re-attach between sleep cycles.
+		__HAL_RCC_GPIOA_CLK_ENABLE();
+		GPIO_InitTypeDef gs = {};
+		gs.Mode      = GPIO_MODE_AF_PP;
+		gs.Pull      = GPIO_PULLUP;        // SWDIO needs pull-up by default
+		gs.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
+		gs.Alternate = GPIO_AF0_SWD;
+		gs.Pin       = GPIO_PIN_13;
+		HAL_GPIO_Init(GPIOA, &gs);
+		gs.Pull      = GPIO_PULLDOWN;      // SWCLK pull-down
+		gs.Pin       = GPIO_PIN_14;
+		HAL_GPIO_Init(GPIOA, &gs);
+
+		Serial.begin(115200);
+		SPI.begin();
+		Wire.begin();
+	}
+}
+
 void loop()
 {
 	digitalWrite(LED_PIN, HIGH);  // LED on during active state
+
+	// Report the radio sleep state from the previous sleep cycle. 0x80 = SLEEP
+	// (target, ~0.1 µA). 0x84 = STANDBY (~1.2 mA leak — workaround failed).
+	// 0xFF = first boot, no sleep cycle has run yet.
+	if (lastRfm69SleepOpMode != 0xFF) {
+		Serial.print("Prev sleep RFM69 OPMODE=0x");
+		Serial.print(lastRfm69SleepOpMode, HEX);
+		Serial.print(" retries=");
+		Serial.println(lastRfm69SleepRetries);
+	}
 
 	// Read HDC1080 sensor
 	float temperature = hdc1080.readTemperature();
@@ -679,6 +867,7 @@ void loop()
 		// cleanly and reset the polling state before the next slice starts.
 		for (uint8_t i = 0; i < 60; i++) {
 			wait(1000);
+			flushPendingSaves();   // persist any gateway parameter changes
 		}
 	}
 
@@ -687,6 +876,7 @@ void loop()
 	// (from the temperature/battery messages above). Without this window, the
 	// node sleeps before the retry arrives and the user's change is lost.
 	wait(2000);
+	flushPendingSaves();   // persist any gateway parameter changes
 
 	// Enter low power sleep (MCU STOP mode + radio sleep)
 	digitalWrite(LED_PIN, LOW);  // LED off before sleep

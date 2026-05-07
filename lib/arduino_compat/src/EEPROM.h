@@ -5,7 +5,7 @@
 /*
  * Flash-emulated EEPROM for STM32U083.
  *
- * Uses the last 2 KB page of flash (page 127 @ 0x0801F800..0x0801FFFF) as a
+ * Uses the last 2 KB page of flash (page 127 @ 0x0803F800..0x0803FFFF) as a
  * single shadowed buffer. Reads hit a RAM shadow; writes update the shadow
  * and flush the whole page (erase + reprogram) immediately.
  *
