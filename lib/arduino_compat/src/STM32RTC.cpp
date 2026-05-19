@@ -73,3 +73,40 @@ uint8_t STM32RTC::getSeconds()
     HAL_RTC_GetDate(&_hrtc, &d, RTC_FORMAT_BIN);
     return t.Seconds;
 }
+
+/*
+ * Alarm A support.
+ *
+ * STM32duino's RTC library owns RTC_TAMP_IRQHandler on STM32U0 and routes
+ * Alarm A events to a user callback via HAL_RTC_AlarmAEventCallback. We have
+ * no STM32duino RTC in the cube env, so we provide the strong IRQ handler and
+ * the Alarm A event callback here. The user callback is stored as file-locals
+ * because the IRQ handler is plain C.
+ */
+static STM32RTC::voidCallbackPtr s_alarmA_cb   = nullptr;
+static void*                     s_alarmA_data = nullptr;
+
+void STM32RTC::attachInterrupt(voidCallbackPtr cb, void* data, Alarm_Source src)
+{
+    if (src != ALARM_A) return;
+    s_alarmA_cb   = cb;
+    s_alarmA_data = data;
+    HAL_NVIC_SetPriority(RTC_TAMP_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(RTC_TAMP_IRQn);
+}
+
+void STM32RTC::disableAlarm(Alarm_Source src)
+{
+    if (src != ALARM_A) return;
+    HAL_RTC_DeactivateAlarm(&_hrtc, RTC_ALARM_A);
+}
+
+extern "C" void RTC_TAMP_IRQHandler(void)
+{
+    HAL_RTC_AlarmIRQHandler(STM32RTC::getInstance().getHandle());
+}
+
+extern "C" void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef* /*hrtc*/)
+{
+    if (s_alarmA_cb) s_alarmA_cb(s_alarmA_data);
+}

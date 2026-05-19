@@ -88,10 +88,18 @@ static volatile bool alarmTriggered = false;
 static bool rtcInitialized = false;
 
 // Callback for RTC alarm
+// DIAG: place a marker so we can tell whether the alarm IRQ ever fires.
+extern "C" __attribute__((used)) volatile uint32_t alarm_fire_count = 0;
+
 static void alarmCallback(void *data)
 {
 	(void)data;
 	alarmTriggered = true;
+	alarm_fire_count++;
+	// Drive PB0 (LED) HIGH from the IRQ so we can confirm wake fired even if
+	// post-IRQ execution hangs before any Serial output. Reading direct from
+	// the BSRR register; PB0 is OUTPUT throughout sleep.
+	GPIOB->BSRR = GPIO_PIN_0;
 }
 
 // Forward declarations for sleep helper functions
@@ -331,7 +339,26 @@ static bool hwSleepInit(void)
 
 	// Deactivate any stale WUT from a previous firmware run (RTC is battery-backed,
 	// survives firmware uploads; a stale armed WUT causes immediate wake from Stop).
+	// We use Alarm A for wake (see hwSleepConfigureAlarm), so WUT must be off.
+	//
+	// ST HAL gap on STM32U0: HAL_RTCEx_DeactivateWakeUpTimer writes RTC_CR without
+	// first disabling write protection (WPR), so on this family the WUTE/WUTIE
+	// clear is silently dropped — leaving WUT armed across the firmware change.
+	// Bracket the call with the WPR unlock/lock sequence and follow it with an
+	// explicit SCR write to clear the status flags (SCR is not WPR-protected,
+	// but doing it inside the unlocked window costs nothing and keeps the
+	// HAL-bug workaround atomic).
+	RTC->WPR = 0xCAU;
+	RTC->WPR = 0x53U;
 	HAL_RTCEx_DeactivateWakeUpTimer(rtc.getHandle());
+	WRITE_REG(RTC->SCR, RTC_SCR_CWUTF | RTC_SCR_CALRAF);
+	RTC->WPR = 0xFFU;
+
+	// Attach the library's Alarm A interrupt callback. STM32duino's RTC_TAMP_IRQHandler
+	// (strong symbol on U0xx) routes Alarm A events to this callback, which clears
+	// ALRAF cleanly. Direct WUT use via HAL_RTCEx_SetWakeUpTimer_IT bypasses this
+	// path and leaves the wake event unserviced — WFI never returns.
+	rtc.attachInterrupt(alarmCallback, nullptr, STM32RTC::ALARM_A);
 
 	rtcInitialized = true;
 	return true;
@@ -351,28 +378,52 @@ static bool hwSleepConfigureAlarm(uint32_t ms)
 	}
 
 	if (ms == 0) {
-		HAL_RTCEx_DeactivateWakeUpTimer(rtc.getHandle());
+		rtc.disableAlarm(STM32RTC::ALARM_A);
 		return true;
 	}
 
+	// Compute Alarm A match time = (current RTC time) + sleepSec.
+	uint8_t hours   = rtc.getHours();
+	uint8_t minutes = rtc.getMinutes();
+	uint8_t seconds = rtc.getSeconds();
+
 	uint32_t sleepSec = ms / 1000;
 	if (sleepSec == 0) sleepSec = 1;
-	if (sleepSec > 65535) sleepSec = 65535;  // WUT counter is 16-bit
+
+	uint32_t totalSec = hours * 3600UL + minutes * 60UL + seconds + sleepSec;
+	uint8_t alarmHours   = (totalSec / 3600) % 24;
+	uint8_t alarmMinutes = (totalSec / 60) % 60;
+	uint8_t alarmSeconds = totalSec % 60;
 
 #if !defined(MY_DISABLED_SERIAL)
-	Serial.print("WUT: "); Serial.print(sleepSec); Serial.println("s");
+	Serial.print("Alarm A @ ");
+	Serial.print(alarmHours);   Serial.print(":");
+	Serial.print(alarmMinutes); Serial.print(":");
+	Serial.print(alarmSeconds); Serial.print(" (+");
+	Serial.print(sleepSec);     Serial.println("s)");
 	Serial.flush();
 #endif
 
-	// Use RTC Wake-Up Timer (WUT) clocked from ck_spre (1 Hz) — 1-second resolution,
-	// plain countdown, no H:M:S or subsecond match quirks. Fires EXTI28 → NVIC IRQ 2.
-	// Counter = sleepSec - 1 → wake after sleepSec seconds (counter decrements to 0
-	// then wraps, setting WUTF).
-	HAL_RTCEx_DeactivateWakeUpTimer(rtc.getHandle());
-	if (HAL_RTCEx_SetWakeUpTimer_IT(rtc.getHandle(), sleepSec - 1,
-	                                RTC_WAKEUPCLOCK_CK_SPRE_16BITS, 0) != HAL_OK) {
+	// Configure Alarm A via ST HAL — handles WPR, ALRAE clear/set, sync wait,
+	// and AlarmMask correctly. Date and SubSeconds masked so the alarm fires
+	// whenever h:m:s match.
+	RTC_AlarmTypeDef a = {};
+	a.AlarmTime.Hours        = alarmHours;
+	a.AlarmTime.Minutes      = alarmMinutes;
+	a.AlarmTime.Seconds      = alarmSeconds;
+	a.AlarmTime.SubSeconds   = 0;
+	a.AlarmTime.TimeFormat   = RTC_HOURFORMAT12_AM;
+	a.AlarmTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+	a.AlarmTime.StoreOperation = RTC_STOREOPERATION_RESET;
+	a.AlarmMask              = RTC_ALARMMASK_DATEWEEKDAY;   // ignore date, compare H/M/S
+	a.AlarmSubSecondMask     = RTC_ALARMSUBSECONDMASK_ALL;  // ignore subseconds
+	a.AlarmDateWeekDaySel    = RTC_ALARMDATEWEEKDAYSEL_DATE;
+	a.AlarmDateWeekDay       = 1;
+	a.Alarm                  = RTC_ALARM_A;
+
+	if (HAL_RTC_SetAlarm_IT(rtc.getHandle(), &a, RTC_FORMAT_BIN) != HAL_OK) {
 #if !defined(MY_DISABLED_SERIAL)
-		Serial.println("WUT setup FAILED");
+		Serial.println("HAL_RTC_SetAlarm_IT FAILED");
 		Serial.flush();
 #endif
 		return false;
@@ -452,6 +503,14 @@ static void hwPrepareSleep(void)
 	// EXTI28 is a "direct" line — IMR28=1 is sufficient; RTSR/FTSR have no effect.
 	// NVIC IRQ 2 (RTC_TAMP_IRQn) is the actual wake vector; we enable it explicitly
 	// in case STM32RTC library hasn't already done so.
+	// Clear any pending RTC event flags BEFORE arming EXTI28 / enabling NVIC IRQ.
+	// EXTI28 is a direct line that follows the RTC event flags (WUTF | ALRAF | …).
+	// If any flag is stale (e.g. WUTF left over from a previous firmware's WUT),
+	// the IRQ fires the instant it is enabled and refires endlessly because the
+	// STM32duino RTC handler only services the events for which a callback was
+	// attached (Alarm A in our case).
+	WRITE_REG(RTC->SCR, RTC_SCR_CWUTF | RTC_SCR_CALRAF);
+
 	EXTI->IMR1 |= (1UL << 28);
 	PWR->CR3   |= PWR_CR3_EIWUL;
 	NVIC_ClearPendingIRQ(RTC_TAMP_IRQn);
@@ -466,6 +525,8 @@ static void hwPrepareSleep(void)
 	Serial.print(" SR=0x");     Serial.print(RTC->SR, HEX);
 	Serial.print(" WUTR=");     Serial.print(RTC->WUTR);
 	Serial.print(" ICSR=0x");   Serial.print(RTC->ICSR, HEX);
+	Serial.print(" ALRMAR=0x"); Serial.print(RTC->ALRMAR, HEX);
+	Serial.print(" ALRMASSR=0x"); Serial.print(RTC->ALRMASSR, HEX);
 	Serial.print(" PREDIV=0x"); Serial.print(RTC->PRER, HEX);
 	Serial.print(" CR3=0x");    Serial.print(PWR->CR3, HEX);
 	Serial.print(" IMR28=");    Serial.print((EXTI->IMR1 >> 28) & 1);
@@ -579,8 +640,10 @@ static void hwEnterSleepMode(void)
 #else
 	HAL_PWR_EnterSTOPMode(PWR_MAINREGULATOR_ON, PWR_STOPENTRY_WFI);
 #endif
-	hwSleepRestoreSystemClock();
+	// Resume tick BEFORE SystemClock_Config (HAL_RCC_*Config use HAL_GetTick
+	// for their internal timeouts; with the tick frozen they spin forever).
 	HAL_ResumeTick();
+	hwSleepRestoreSystemClock();
 
 #elif MY_STM32_SLEEP_MODE == POWER_SLEEP_STOP1
 	// ==================== Stop 0 Mode (manual — U0 HAL lacks wrapper) ==========
@@ -599,8 +662,9 @@ static void hwEnterSleepMode(void)
 #else
 	HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
 #endif
-	hwSleepRestoreSystemClock();
+	// Resume tick BEFORE SystemClock_Config (see STOP0 comment).
 	HAL_ResumeTick();
+	hwSleepRestoreSystemClock();
 
 #elif MY_STM32_SLEEP_MODE == POWER_SLEEP_STOP2
 	// ==================== Stop 2 Mode ====================
@@ -613,8 +677,9 @@ static void hwEnterSleepMode(void)
 	// Fallback to Stop 1 if Stop 2 not available
 	HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
 #endif
-	hwSleepRestoreSystemClock();
+	// Resume tick BEFORE SystemClock_Config (see STOP0 comment).
 	HAL_ResumeTick();
+	hwSleepRestoreSystemClock();
 
 #elif MY_STM32_SLEEP_MODE == POWER_SLEEP_STANDBY
 	// ==================== Standby Mode ====================

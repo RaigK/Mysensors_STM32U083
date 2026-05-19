@@ -3,7 +3,7 @@ s = serial.Serial('COM9', 115200, timeout=1)
 print('opened COM9 @ 115200', flush=True)
 start = time.time()
 count = 0
-while time.time() - start < 90:
+while time.time() - start < 180:
     d = s.read(256)
     if d:
         count += len(d)

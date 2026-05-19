@@ -36,7 +36,7 @@
 // Enable debug prints (comment out for lowest power)
 //#define MY_DEBUG
 #define MY_SPLASH_SCREEN_DISABLED
-#define MY_DISABLED_SERIAL
+// #define MY_DISABLED_SERIAL  // TEMP: re-enabled for hang diagnosis
 #define MY_SMART_SLEEP_WAIT_DURATION_MS 0
 #define MY_SLEEP_TRANSPORT_RECONNECT_TIMEOUT_MS 0
 #define MY_SLEEP_HANDLER  // we provide our own sleepHandler() below
@@ -674,7 +674,9 @@ void sleepHandler(bool entering)
 		lastRfm69SleepRetries = retries;
 
 		Serial.flush();
-		Serial.end();
+		// Serial.end();  // TEMP DIAG: leave Serial alive so patched HAL's
+		                  // hwPrepareSleep can print the RTC/EXTI state right
+		                  // before WFI entry.
 		SPI.end();
 		Wire.end();
 
@@ -710,7 +712,9 @@ void sleepHandler(bool entering)
 		// in OPMODE=SLEEP and won't fire DIO0 until reinitialised on wake),
 		// so disabling its input buffer saves a small amount of static draw.
 		g.Mode = GPIO_MODE_ANALOG;
-		g.Pin  = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 |
+		// TEMP DIAG: exclude PA2/PA3 (USART2 TX/RX) so Serial.print works through
+		// hwPrepareSleep right up to WFI entry.
+		g.Pin  = GPIO_PIN_0 | GPIO_PIN_1 /* | GPIO_PIN_2 | GPIO_PIN_3 */ |
 		         GPIO_PIN_4 | GPIO_PIN_6 |
 		         GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10 |
 		         GPIO_PIN_11 | GPIO_PIN_12 |
@@ -734,7 +738,7 @@ void sleepHandler(bool entering)
 		__HAL_RCC_GPIOD_CLK_DISABLE();
 
 		// Drop peripheral clocks the GPIO sweep already detached.
-		__HAL_RCC_USART2_CLK_DISABLE();
+		// __HAL_RCC_USART2_CLK_DISABLE();  // TEMP DIAG: keep USART2 alive
 		__HAL_RCC_SPI1_CLK_DISABLE();
 		__HAL_RCC_I2C2_CLK_DISABLE();
 		__HAL_RCC_ADC_CLK_DISABLE();
@@ -758,14 +762,27 @@ void sleepHandler(bool entering)
 		gs.Pin       = GPIO_PIN_14;
 		HAL_GPIO_Init(GPIOA, &gs);
 
+		// Mirror the custom pin assignments from before()/setup() — Serial.end()
+		// in the entering path resets the pin selection, so we must reapply it
+		// before Serial.begin(), otherwise Serial falls back to LPUART1 default
+		// and all output disappears after the first wake.
+		Serial.setTx(PA_2_ALT1);
+		Serial.setRx(PA_3_ALT1);
 		Serial.begin(115200);
+		Serial.println("==WAKE==");  // DIAG: WFI returned + Serial reinit OK
+		Serial.flush();
 		SPI.begin();
+		Wire.setSCL(I2C2_SCL_PIN);
+		Wire.setSDA(I2C2_SDA_PIN);
+		Wire.setClock(10000);
 		Wire.begin();
 	}
 }
 
 void loop()
 {
+	Serial.println("==LOOP==");  // DIAG: reached next iteration
+	Serial.flush();
 	digitalWrite(LED_PIN, HIGH);  // LED on during active state
 
 	// Report the radio sleep state from the previous sleep cycle. 0x80 = SLEEP
@@ -844,9 +861,13 @@ void loop()
 	// transport in a subtly corrupted state — calling sendBatteryLevel() after wait()
 	// would hang the node.
 	if (firstLoop) {
-		send(msgInterval.set((uint16_t)(sleepTimeMs / 1000)));
-		send(msgBattMin.set(battMinMv));
-		send(msgBattMax.set(battMaxMv));
+		// setRequestEcho(false): tell gateway not to echo these C_SETs back.
+		// An echoed C_SET arriving during the 60 s wait below triggers MySensors'
+		// auto-reply after receive() returns, which corrupts transport state and
+		// causes the next wait() slice to hang in _process() (LED stuck HIGH).
+		send(msgInterval.setRequestEcho(false).set((uint16_t)(sleepTimeMs / 1000)));
+		send(msgBattMin.setRequestEcho(false).set(battMinMv));
+		send(msgBattMax.setRequestEcho(false).set(battMaxMv));
 		firstLoop = false;
 		// On first boot, wait 60 s so the user can push custom parameter SETs
 		// from the gateway before the node enters its regular sleep cycle.
@@ -865,10 +886,16 @@ void loop()
 		// a long wait() can leave the RFM69 driver in a state where _process() never
 		// returns, hanging wait() indefinitely. Short slices let each call time out
 		// cleanly and reset the polling state before the next slice starts.
+		//
+		// DIAG: print a dot after each slice so we can see WHERE a hang occurs
+		// (auto-echo inside wait? vs flushPendingSaves flash erase?). Flash writes
+		// are deferred to AFTER the loop — keeps the 60 s window itself flash-quiet.
 		for (uint8_t i = 0; i < 60; i++) {
 			wait(1000);
-			flushPendingSaves();   // persist any gateway parameter changes
+			Serial.print("."); Serial.flush();
 		}
+		Serial.println();
+		flushPendingSaves();   // persist any gateway parameter changes (deferred)
 	}
 
 	// Wait for any pending SET messages from the controller before sleeping.
@@ -880,6 +907,29 @@ void loop()
 
 	// Enter low power sleep (MCU STOP mode + radio sleep)
 	digitalWrite(LED_PIN, LOW);  // LED off before sleep
+
+	// DIAG: confirm RTC is counting and Alarm A is being armed correctly
+	// before sleep entry. RTC_CR bit 8 = ALRAE, bit 12 = ALRAIE.
+	// EXTI->IMR1 bit 28 = RTC line unmasked. NVIC IRQ 2 = RTC_TAMP_IRQn.
+	{
+		uint32_t cr1 = RTC->CR;
+		uint32_t sr1 = RTC->SR;
+		uint32_t t1  = RTC->TR;     // raw BCD time register (HH:MM:SS)
+		uint32_t imr = (EXTI->IMR1 >> 28) & 1;
+		uint32_t nvic_en = (NVIC->ISER[0] >> 2) & 1;
+		Serial.print("RTC pre: CR=0x"); Serial.print(cr1, HEX);
+		Serial.print(" SR=0x");         Serial.print(sr1, HEX);
+		Serial.print(" TR=0x");         Serial.print(t1, HEX);
+		Serial.print(" IMR28=");        Serial.print(imr);
+		Serial.print(" NVIC2=");        Serial.println(nvic_en);
+		Serial.flush();
+		// Wait > 1 RTC second, then read TR again — confirms RTC is ticking.
+		delay(1100);
+		uint32_t t2 = RTC->TR;
+		Serial.print("RTC TR after 1.1s: 0x"); Serial.println(t2, HEX);
+		Serial.flush();
+	}
+
 	Serial.print("Sleeping ");
 	Serial.print(sleepTimeMs / 1000);
 	Serial.println("s...");

@@ -11,6 +11,9 @@
 class STM32RTC {
 public:
     enum Source_Clock { LSE_CLOCK, HSE_CLOCK, LSI_CLOCK };
+    enum Alarm_Source { ALARM_A, ALARM_B };
+
+    typedef void (*voidCallbackPtr)(void*);
 
     static STM32RTC& getInstance();
 
@@ -22,6 +25,14 @@ public:
     uint8_t getHours();
     uint8_t getMinutes();
     uint8_t getSeconds();
+
+    // Alarm support. The cube env has no STM32duino RTC library, so we
+    // own the strong RTC_TAMP_IRQHandler and HAL_RTC_AlarmAEventCallback
+    // here. attachInterrupt registers a user callback that fires from the
+    // HAL callback whenever Alarm A matches.
+    void attachInterrupt(voidCallbackPtr cb, void* data = nullptr,
+                         Alarm_Source src = ALARM_A);
+    void disableAlarm(Alarm_Source src = ALARM_A);
 
 private:
     STM32RTC() = default;
