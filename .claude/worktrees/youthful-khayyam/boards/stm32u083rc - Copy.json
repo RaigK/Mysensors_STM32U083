@@ -1,0 +1,38 @@
+{
+  "build": {
+    "core": "stm32",
+    "cpu": "cortex-m0plus",
+    "extra_flags": "-DSTM32U0xx -DSTM32U083xx",
+    "f_cpu": "4000000L",
+    "mcu": "stm32u083rctx",
+    "product_line": "STM32U083xx",
+    "variant": "STM32U0xx/U073R(8-B-C)(I-T)_U083RC(I-T)"
+  },
+  "debug": {
+    "default_tools": [
+      "stlink"
+    ],
+    "jlink_device": "STM32U083RC",
+    "openocd_target": "stm32u0x",
+    "svd_path": "STM32U083.svd"
+  },
+  "frameworks": [
+    "arduino",
+    "stm32cube"
+  ],
+  "name": "STM32U083RC (32k LSI)",
+  "upload": {
+    "maximum_ram_size": 40960,
+    "maximum_size": 262144,
+    "protocol": "stlink",
+    "protocols": [
+      "stlink",
+      "jlink",
+      "cmsis-dap",
+      "blackmagic",
+      "serial"
+    ]
+  },
+  "url": "https://www.st.com/en/microcontrollers-microprocessors/stm32u083rc.html",
+  "vendor": "ST"
+}

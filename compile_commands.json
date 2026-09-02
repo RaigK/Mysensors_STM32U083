@@ -1,0 +1,542 @@
+[
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-as.exe -mthumb -mcpu=cortex-m0plus -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\startup_stm32u083xx.o lib\\STM32CubeU0\\src\\startup_stm32u083xx.s",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\startup_stm32u083xx.s",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\startup_stm32u083xx.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_adc.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_adc.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_adc.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_adc.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_adc_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_adc_ex.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_adc_ex.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_adc_ex.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_comp.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_comp.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_comp.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_comp.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_cortex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_cortex.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_cortex.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_cortex.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_crc.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_crc.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_crc.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_crc.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_crc_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_crc_ex.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_crc_ex.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_crc_ex.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_cryp.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_cryp.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_cryp.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_cryp.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_cryp_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_cryp_ex.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_cryp_ex.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_cryp_ex.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_dac.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_dac.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_dac.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_dac.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_dac_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_dac_ex.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_dac_ex.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_dac_ex.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_dma.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_dma.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_dma.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_dma.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_dma_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_dma_ex.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_dma_ex.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_dma_ex.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_exti.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_exti.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_exti.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_exti.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_flash.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_flash.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_flash.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_flash.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_flash_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_flash_ex.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_flash_ex.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_flash_ex.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_gpio.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_gpio.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_gpio.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_gpio.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_i2c.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_i2c.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_i2c.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_i2c.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_i2c_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_i2c_ex.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_i2c_ex.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_i2c_ex.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_irda.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_irda.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_irda.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_irda.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_iwdg.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_iwdg.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_iwdg.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_iwdg.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_lcd.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_lcd.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_lcd.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_lcd.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_lptim.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_lptim.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_lptim.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_lptim.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_opamp.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_opamp.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_opamp.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_opamp.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_opamp_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_opamp_ex.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_opamp_ex.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_opamp_ex.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_pcd.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_pcd.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_pcd.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_pcd.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_pcd_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_pcd_ex.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_pcd_ex.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_pcd_ex.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_pwr.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_pwr.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_pwr.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_pwr.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_pwr_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_pwr_ex.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_pwr_ex.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_pwr_ex.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_rcc.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_rcc.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_rcc.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_rcc.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_rcc_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_rcc_ex.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_rcc_ex.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_rcc_ex.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_rng.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_rng.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_rng.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_rng.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_rng_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_rng_ex.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_rng_ex.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_rng_ex.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_rtc.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_rtc.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_rtc.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_rtc.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_rtc_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_rtc_ex.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_rtc_ex.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_rtc_ex.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_smartcard.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_smartcard.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_smartcard.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_smartcard.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_smartcard_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_smartcard_ex.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_smartcard_ex.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_smartcard_ex.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_spi.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_spi.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_spi.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_spi.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_spi_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_spi_ex.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_spi_ex.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_spi_ex.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_tim.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_tim.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_tim.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_tim.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_tim_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_tim_ex.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_tim_ex.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_tim_ex.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_timebase_rtc_alarm_template.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_timebase_rtc_alarm_template.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_timebase_rtc_alarm_template.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_timebase_rtc_alarm_template.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_timebase_rtc_wakeup_template.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_timebase_rtc_wakeup_template.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_timebase_rtc_wakeup_template.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_timebase_rtc_wakeup_template.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_timebase_tim_template.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_timebase_tim_template.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_timebase_tim_template.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_timebase_tim_template.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_tsc.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_tsc.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_tsc.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_tsc.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_uart.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_uart.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_uart.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_uart.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_uart_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_uart_ex.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_uart_ex.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_uart_ex.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_usart.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_usart.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_usart.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_usart.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_usart_ex.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_usart_ex.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_usart_ex.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_usart_ex.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_wwdg.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_hal_wwdg.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_hal_wwdg.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_hal_wwdg.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_adc.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_adc.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_adc.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_adc.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_comp.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_comp.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_comp.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_comp.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_crc.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_crc.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_crc.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_crc.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_crs.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_crs.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_crs.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_crs.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_dac.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_dac.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_dac.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_dac.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_dma.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_dma.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_dma.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_dma.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_exti.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_exti.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_exti.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_exti.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_gpio.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_gpio.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_gpio.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_gpio.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_i2c.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_i2c.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_i2c.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_i2c.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_lptim.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_lptim.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_lptim.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_lptim.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_lpuart.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_lpuart.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_lpuart.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_lpuart.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_opamp.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_opamp.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_opamp.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_opamp.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_pwr.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_pwr.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_pwr.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_pwr.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_rcc.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_rcc.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_rcc.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_rcc.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_rng.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_rng.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_rng.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_rng.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_rtc.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_rtc.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_rtc.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_rtc.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_spi.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_spi.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_spi.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_spi.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_tim.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_tim.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_tim.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_tim.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_usart.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_usart.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_usart.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_usart.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_usb.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_usb.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_usb.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_usb.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_utils.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\stm32u0xx_ll_utils.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\stm32u0xx_ll_utils.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\stm32u0xx_ll_utils.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\system_stm32u0xx.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -DUSE_HAL_DRIVER -Ilib\\STM32CubeU0\\src -Iinclude lib\\STM32CubeU0\\src\\system_stm32u0xx.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\STM32CubeU0\\src\\system_stm32u0xx.c",
+        "output": ".pio\\build\\stm32u083_cube\\libd75\\STM32CubeU0\\system_stm32u0xx.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-g++.exe -o .pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\EEPROM.o -c -fno-rtti -fno-exceptions -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -Ilib\\arduino_compat\\src -Ilib\\STM32CubeU0\\src -Iinclude lib\\arduino_compat\\src\\EEPROM.cpp",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\arduino_compat\\src\\EEPROM.cpp",
+        "output": ".pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\EEPROM.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-g++.exe -o .pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\HardwareSerial.o -c -fno-rtti -fno-exceptions -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -Ilib\\arduino_compat\\src -Ilib\\STM32CubeU0\\src -Iinclude lib\\arduino_compat\\src\\HardwareSerial.cpp",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\arduino_compat\\src\\HardwareSerial.cpp",
+        "output": ".pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\HardwareSerial.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-g++.exe -o .pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\Print.o -c -fno-rtti -fno-exceptions -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -Ilib\\arduino_compat\\src -Ilib\\STM32CubeU0\\src -Iinclude lib\\arduino_compat\\src\\Print.cpp",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\arduino_compat\\src\\Print.cpp",
+        "output": ".pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\Print.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-g++.exe -o .pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\SPI.o -c -fno-rtti -fno-exceptions -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -Ilib\\arduino_compat\\src -Ilib\\STM32CubeU0\\src -Iinclude lib\\arduino_compat\\src\\SPI.cpp",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\arduino_compat\\src\\SPI.cpp",
+        "output": ".pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\SPI.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-g++.exe -o .pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\STM32RTC.o -c -fno-rtti -fno-exceptions -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -Ilib\\arduino_compat\\src -Ilib\\STM32CubeU0\\src -Iinclude lib\\arduino_compat\\src\\STM32RTC.cpp",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\arduino_compat\\src\\STM32RTC.cpp",
+        "output": ".pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\STM32RTC.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-g++.exe -o .pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\WInterrupts.o -c -fno-rtti -fno-exceptions -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -Ilib\\arduino_compat\\src -Ilib\\STM32CubeU0\\src -Iinclude lib\\arduino_compat\\src\\WInterrupts.cpp",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\arduino_compat\\src\\WInterrupts.cpp",
+        "output": ".pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\WInterrupts.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-g++.exe -o .pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\Wire.o -c -fno-rtti -fno-exceptions -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -Ilib\\arduino_compat\\src -Ilib\\STM32CubeU0\\src -Iinclude lib\\arduino_compat\\src\\Wire.cpp",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\arduino_compat\\src\\Wire.cpp",
+        "output": ".pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\Wire.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\avr_compat.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -Ilib\\arduino_compat\\src -Ilib\\STM32CubeU0\\src -Iinclude lib\\arduino_compat\\src\\avr_compat.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\arduino_compat\\src\\avr_compat.c",
+        "output": ".pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\avr_compat.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-g++.exe -o .pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\main.o -c -fno-rtti -fno-exceptions -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -Ilib\\arduino_compat\\src -Ilib\\STM32CubeU0\\src -Iinclude lib\\arduino_compat\\src\\main.cpp",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\arduino_compat\\src\\main.cpp",
+        "output": ".pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\main.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\stop2_wrap.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -Ilib\\arduino_compat\\src -Ilib\\STM32CubeU0\\src -Iinclude lib\\arduino_compat\\src\\stop2_wrap.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\arduino_compat\\src\\stop2_wrap.c",
+        "output": ".pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\stop2_wrap.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -o .pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\syscalls.o -c -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -Ilib\\arduino_compat\\src -Ilib\\STM32CubeU0\\src -Iinclude lib\\arduino_compat\\src\\syscalls.c",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\arduino_compat\\src\\syscalls.c",
+        "output": ".pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\syscalls.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-g++.exe -o .pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\wiring_analog.o -c -fno-rtti -fno-exceptions -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -Ilib\\arduino_compat\\src -Ilib\\STM32CubeU0\\src -Iinclude lib\\arduino_compat\\src\\wiring_analog.cpp",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\arduino_compat\\src\\wiring_analog.cpp",
+        "output": ".pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\wiring_analog.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-g++.exe -o .pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\wiring_digital.o -c -fno-rtti -fno-exceptions -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -Ilib\\arduino_compat\\src -Ilib\\STM32CubeU0\\src -Iinclude lib\\arduino_compat\\src\\wiring_digital.cpp",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\arduino_compat\\src\\wiring_digital.cpp",
+        "output": ".pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\wiring_digital.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-g++.exe -o .pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\wiring_time.o -c -fno-rtti -fno-exceptions -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -Ilib\\arduino_compat\\src -Ilib\\STM32CubeU0\\src -Iinclude lib\\arduino_compat\\src\\wiring_time.cpp",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "lib\\arduino_compat\\src\\wiring_time.cpp",
+        "output": ".pio\\build\\stm32u083_cube\\lib36b\\arduino_compat\\wiring_time.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-gcc.exe -mthumb -mcpu=cortex-m0plus -x assembler-with-cpp -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -I.pio\\libdeps\\stm32u083_cube\\MySensors -Ilib\\arduino_compat\\src -Ilib\\STM32CubeU0\\src -Iinclude -c -o .pio\\build\\stm32u083_cube\\lib7b5\\MySensors\\MyASM.o .pio\\libdeps\\stm32u083_cube\\MySensors\\MyASM.S",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": ".pio\\libdeps\\stm32u083_cube\\MySensors\\MyASM.S",
+        "output": ".pio\\build\\stm32u083_cube\\lib7b5\\MySensors\\MyASM.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-g++.exe -o \".pio\\build\\stm32u083_cube\\lib4c7\\ClosedCube HDC1080\\ClosedCube_HDC1080.o\" -c -fno-rtti -fno-exceptions -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn \"-I.pio\\libdeps\\stm32u083_cube\\ClosedCube HDC1080\\src\" -Ilib\\arduino_compat\\src -Ilib\\STM32CubeU0\\src -Iinclude \".pio\\libdeps\\stm32u083_cube\\ClosedCube HDC1080\\src\\ClosedCube_HDC1080.cpp\"",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": ".pio\\libdeps\\stm32u083_cube\\ClosedCube HDC1080\\src\\ClosedCube_HDC1080.cpp",
+        "output": ".pio\\build\\stm32u083_cube\\lib4c7\\ClosedCube HDC1080\\ClosedCube_HDC1080.o"
+    },
+    {
+        "command": "C:\\Users\\raigk\\.platformio\\packages\\toolchain-gccarmnoneeabi@1.70201.0\\bin\\arm-none-eabi-g++.exe -o .pio\\build\\stm32u083_cube\\src\\main.o -c -fno-rtti -fno-exceptions -Os -ffunction-sections -fdata-sections -Wall -mthumb -mcpu=cortex-m0plus -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -nostartfiles --specs=nano.specs --specs=nosys.specs -include include\\stm32_aes_fix.h -DF_CPU=4000000L -DPLATFORMIO=60119 -DSTM32U0xx -DSTM32U083xx -DSTM32U0xx -DSTM32U083xx -DUSE_HAL_DRIVER -DARDUINO_ARCH_STM32 -DMY_STM32_RUN_MODE=2 -DMY_STM32_SLEEP_MODE=3 -DRTC_ISR_INITS=RTC_ICSR_INITS -DRTC_WKUP_IRQn=RTC_TAMP_IRQn -Isrc \"-I.pio\\libdeps\\stm32u083_cube\\ClosedCube HDC1080\\src\" -I.pio\\libdeps\\stm32u083_cube\\MySensors -Ilib\\arduino_compat\\src -Ilib\\STM32CubeU0\\src -Iinclude src\\main.cpp",
+        "directory": "C:\\claude\\Mysensors_STM32U083",
+        "file": "src\\main.cpp",
+        "output": ".pio\\build\\stm32u083_cube\\src\\main.o"
+    }
+]

@@ -1,0 +1,190 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+MySensors sensor node implementation for STM32U083RC microcontroller with RFM69 radio. This is a low-power temperature/humidity sensor using HDC1080 with battery monitoring, designed to communicate with a MySensors gateway.
+
+## Build Commands
+
+PlatformIO CLI is not in PATH — always use the full path:
+
+```bash
+# Build the project
+"C:/Users/raigk/.platformio/penv/Scripts/pio.exe" run
+
+# Upload to device (uses STM32CubeProgrammer CLI via ST-Link SWD)
+"C:/Users/raigk/.platformio/penv/Scripts/pio.exe" run -t upload
+
+# Monitor serial output (COM9 at 115200 baud)
+"C:/Users/raigk/.platformio/penv/Scripts/pio.exe" device monitor
+
+# Clean build
+"C:/Users/raigk/.platformio/penv/Scripts/pio.exe" run -t clean
+```
+
+Upload requires STM32CubeProgrammer installed at `C:/Program Files/STMicroelectronics/STM32Cube/STM32CubeProgrammer/`. The upload command flashes to `0x08000000` via SWD and resets.
+
+**Debugging with OpenOCD**: `stm32u0x.cfg` in the project root is a custom OpenOCD target config for the STM32U0 (based on the STM32L0 config with STM32L4x flash driver). Referenced by `board_debug.openocd_target = stm32u0x` in `platformio.ini`. Use PlatformIO's debug interface or `openocd -f stm32u0x.cfg` for live debugging. Note: debug sessions enable low-power debug mode via DBGMCU register in the examine-end event.
+
+**Upload note**: The upload command uses `mode=NORMAL freq=480` at 480 kHz. The firmware keeps SWD accessible in STOP2 (PA13/PA14 stay in SWD AF mode, DBGMCU not disabled), so uploads connect without holding the reset button. If upload fails after a firmware change that breaks this, manually hold the RESET button while the upload command runs to force MCU out of sleep.
+
+## Architecture
+
+### Library Override Mechanism
+
+The `lib/MySensors_patch/` directory contains patched MySensors library files. PlatformIO's library dependency finder (LDF) loads these patches **before** the upstream MySensors library because local `lib/` has higher priority. The `library.json` marks it as a valid PlatformIO library. Do not rename or remove `library.json`.
+
+Key patches:
+- `hal/architecture/STM32/MyHwSTM32.cpp` - Complete STM32 hardware abstraction with low-power STOP mode sleep, RTC Alarm-based wake-up (uses STM32RTC library), GPIO interrupt wake-up, EEPROM emulation
+- `hal/architecture/STM32/MyHwSTM32.h` - Header for the STM32 HAL implementation
+- `hal/crypto/generic/drivers/AES/AES.h` - Fixes macro conflict between STM32 HAL's `AES` peripheral definition and MySensors' `AES` class (lines 39-41: `#ifdef AES #undef AES`)
+- `hal/crypto/generic/MyCryptoGeneric.cpp`, `hal/crypto/generic/drivers/AES/AES.cpp`, `AES_config.h` - Crypto driver files included to ensure the patched AES.h is used
+
+### STM32U0 Compatibility Fixes
+
+The STM32U0 series requires workarounds defined in `platformio.ini`:
+
+- `RTC_ISR_INITS=RTC_ICSR_INITS` - U0 uses ICSR register instead of ISR for RTC initialization check
+- `RTC_WKUP_IRQn=RTC_TAMP_IRQn` - U0 combines RTC wake-up into TAMP interrupt vector (uses `RTC_TAMP_IRQHandler`)
+- `-include "include/stm32_aes_fix.h"` - Force-included before all headers (the file itself is a placeholder; the actual `#undef AES` fix lives in the patched `lib/MySensors_patch/hal/crypto/generic/drivers/AES/AES.h`)
+- `ARDUINO_ARCH_STM32` and `ARDUINO_NUCLEO_U083RC` - Required board identification defines
+
+### Custom Board Definition
+
+`boards/stm32u083rc.json` defines:
+- Cortex-M0+ at 4MHz default clock (overridden by `SystemClock_Config()`)
+- 256KB flash, 40KB RAM
+- Uses variant `STM32U0xx/U073R(8-B-C)(I-T)_U083RC(I-T)` from STM32duino core
+
+The `SystemClock_Config()` in `src/main.cpp` configures the actual runtime clock based on `MY_STM32_RUN_MODE`:
+- **Normal**: 16 MHz HSI, voltage scale 2
+- **Low Power Run**: 2 MHz MSI, LP regulator enabled
+
+### Library Dependencies
+
+Defined in `platformio.ini`:
+- `MySensors` from Git `development` branch
+- `STM32duino RTC` ^1.4.0 - RTC Alarm wake-up
+- `ClosedCube HDC1080` ^1.3.2 - Temperature/humidity sensor
+
+The Arduino core is pulled from `stm32duino/Arduino_Core_STM32` Git `main` branch (required for STM32U0 support).
+
+### Pin Configuration
+
+Radio (RFM69 on SPI1):
+- SCK: PA5, MISO: PA6, MOSI: PA7
+- CS: PB6, IRQ: PA10
+- SPI speed: 1 MHz (set via `MY_RFM69_SPI_SPEED`)
+
+Sensor (HDC1080 on I2C2):
+- SCL: PB10, SDA: PB11
+
+Battery ADC: PA0 (2:1 voltage divider, measures up to 6.6V). Uses factory-calibrated VREFINT to measure actual VDDA at runtime instead of assuming 3.3V. Requires `analogReadResolution(12)` — STM32duino defaults to 10-bit. The calibration flow: `readVDDA()` reads the internal `AVREF` channel and computes VDDA from `VREFINT_CAL_ADDR`/`VREFINT_CAL_VREF` factory constants, then `readBatteryVoltage()` uses that VDDA to scale the PA0 ADC reading.
+
+Battery chemistry: **Lithium Thionyl Chloride (Li-SOCl2)**, 3.6V nominal. Battery percentage is mapped between `battMinMv` (cutoff, default 3100 mV) and `battMaxMv` (full, default 3600 mV). Both thresholds are runtime-adjustable via the gateway (children 6 and 7) and persisted to EEPROM. At or below the cutoff voltage (and above 2.5V as USB-only guard), the node sends a final battery voltage + 0% level and enters indefinite sleep to preserve remaining capacity — no further sensor or signal transmissions.
+
+## Key Implementation Details
+
+### Power Mode Configuration
+
+Compile-time defines in `src/main.cpp` select run and sleep modes. Include `stm32_power_config.h` after setting defines. Defaults: `POWER_RUN_NORMAL` (16 MHz) and `POWER_SLEEP_STOP1`.
+
+**Run Modes** (`MY_STM32_RUN_MODE`):
+| Mode | Clock | Current | Use Case |
+|------|-------|---------|----------|
+| `POWER_RUN_NORMAL` | 16 MHz HSI | ~3-5 mA | Normal operation, fast processing |
+| `POWER_RUN_LOW_POWER` | 2 MHz MSI | ~200-500 µA | Battery operation, slow processing OK |
+
+**Sleep Modes** (`MY_STM32_SLEEP_MODE`):
+| Mode | Current | Wake Sources | Notes |
+|------|---------|--------------|-------|
+| `POWER_SLEEP_SLEEP` | ~1 mA | Any interrupt | Fast wake, peripherals on |
+| `POWER_SLEEP_LP_SLEEP` | ~100-200 µA | Any interrupt | Requires LPR mode (auto-forced) |
+| `POWER_SLEEP_STOP0` | ~10-20 µA | RTC, EXTI | Fast wake-up |
+| `POWER_SLEEP_STOP1` | ~5-10 µA | RTC, EXTI | Default, good balance |
+| `POWER_SLEEP_STOP2` | ~1-3 µA | RTC, EXTI | Lowest Stop power |
+| `POWER_SLEEP_STANDBY` | ~300 nA | RTC, WKUP pins | RAM lost, system resets |
+
+**Validation**: If `POWER_SLEEP_LP_SLEEP` is selected without `POWER_RUN_LOW_POWER`, the build auto-forces Low Power Run mode with a warning.
+
+Example configuration:
+```cpp
+#define MY_STM32_RUN_MODE    POWER_RUN_LOW_POWER   // 2 MHz for battery life
+#define MY_STM32_SLEEP_MODE  POWER_SLEEP_STOP2     // Lowest practical power
+#include "stm32_power_config.h"
+```
+
+### Sleep Implementation Details
+
+The `hwSleep()` functions in `MyHwSTM32.cpp` handle all sleep modes:
+1. Initialize RTC via STM32RTC library with LSI clock (32 kHz)
+2. Configure RTC Alarm A for timed wake-up (1-second resolution, sub-second values round up)
+3. Call `hwPrepareSleep()` to disable peripheral clocks (SPI1, I2C1/2, ADC) and set unused GPIOs to analog mode
+4. Call `hwEnterSleepMode()` which selects mode based on `MY_STM32_SLEEP_MODE`
+5. On wake: restore clocks via `SystemClock_Config()`, re-enable peripherals, restore GPIO pin modes
+
+Wake-up sources: RTC Alarm A or GPIO interrupts (for radio IRQ).
+
+**STM32U0-specific notes:**
+- **IMPORTANT**: RTC wake-up timer (WUTF) does NOT work on STM32U0 - use RTC Alarm A instead
+- RTC Alarm uses EXTI line 17 (rising edge trigger)
+- Internal wake-up line: `PWR->CR3 |= PWR_CR3_EIWUL`
+- DBGMCU handling in `hwPrepareSleep()` is **conditional on `MY_DEBUG`**: if defined, `HAL_DBGMCU_EnableDBGStopMode()` keeps SWD alive in STOP2 (~1 µA extra cost, enables upload without reset); if not defined, `DBGMCU->CR = 0` saves ~1 µA (production builds)
+- PA13/PA14 are **always** kept in SWD AF mode in `hwConfigureGpioLowPower()` regardless of `MY_DEBUG` so the SWD pins themselves never go analog
+
+### MySensors Configuration
+
+Key defines in `src/main.cpp`:
+- `MY_RADIO_RFM69` with `MY_RFM69_NEW_DRIVER`
+- `MY_IS_RFM69HW` for high-power module
+- `MY_RFM69_FREQUENCY RFM69_868MHZ`
+- `MY_RFM69_CS_PIN PB6`, `MY_RFM69_IRQ_PIN PA10`, `MY_RFM69_IRQ_NUM PA10` (all three required by new driver)
+- `MY_RFM69_TX_POWER_DBM (6)` - initial/max TX power in dBm before ATC adjusts down
+- `MY_NODE_ID 11` (static node ID)
+- `MY_DEBUG` for serial debug output (comment out for lowest power)
+- `MY_DISABLED_SERIAL` - disables MySensors serial output; however, the `Serial.begin()` call and initial `=== BOOT ===` message in `setup()` are **unconditional** and always execute regardless of this define
+- `MY_SPLASH_SCREEN_DISABLED` - skips MySensors boot banner
+- `MY_SMART_SLEEP_WAIT_DURATION_MS 0` - disable smart sleep for faster wake cycles
+- `MY_SLEEP_TRANSPORT_RECONNECT_TIMEOUT_MS 0` - skip transport reconnect delay on wake
+- `SLEEP_TIME_DEFAULT_MS 60000` - default sleep interval; runtime value `sleepTimeMs` is loaded from EEPROM (pos 200–201) on boot and overrides this default
+- **`POWER_RUN_LOW_POWER` breaks serial**: at 2 MHz MSI, USART2 reinit after clock restore fails silently — no output on monitor. Always use `POWER_RUN_NORMAL` (16 MHz) when `MY_DEBUG` or serial output is needed. Switch to `POWER_RUN_LOW_POWER` only with `MY_DISABLED_SERIAL`.
+
+### ATC Signal Reporting
+
+Requires `MY_SIGNAL_REPORT_ENABLED` and `MY_RFM69_ATC_TARGET_RSSI_DBM (-70)` defines. Use `transportGetSignalReport()` after `send()` calls:
+- `SR_RX_RSSI` - works reliably, measures signal from ACK packets
+- `SR_TX_POWER_LEVEL` - works, shows current ATC-adjusted TX power in dBm
+- `SR_TX_RSSI` - **do not use**, returns 127 without gateway-side ATC support
+- Uses `S_SOUND` / `V_LEVEL` sensor types for controller compatibility (`S_CUSTOM` / `V_CUSTOM` may not display values in some controllers)
+
+### Sensor Channels
+
+| Child ID | Type | Description |
+|----------|------|-------------|
+| 0 | S_TEMP | Temperature (HDC1080) |
+| 1 | S_HUM | Humidity (HDC1080) |
+| 2 | S_MULTIMETER | Battery voltage |
+| 3 | S_SOUND | RX RSSI (dBm) |
+| 4 | S_SOUND | TX Power level (dBm) |
+| 5 | S_CUSTOM / V_VAR1 | Sleep interval (seconds) — gateway-adjustable, EEPROM 200–201, range 10–3600, default 60 |
+| 6 | S_CUSTOM / V_VAR1 | Battery cutoff voltage (mV) — gateway-adjustable, EEPROM 202–203, range 2000–4200, default 3100 |
+| 7 | S_CUSTOM / V_VAR1 | Battery full voltage (mV) — gateway-adjustable, EEPROM 204–205, range 2000–4200, default 3600 |
+
+**Gateway SET commands** (node ID 11):
+```
+11;5;1;0;24;120    → set sleep interval to 120 s
+11;6;1;0;24;2850   → set battery cutoff to 2.85 V
+11;7;1;0;24;3700   → set battery full to 3.70 V
+```
+Values are validated, clamped, persisted to EEPROM, and echoed back. They survive power cycles. CHILD_ID_BATT_MIN rejects values ≥ battMaxMv; CHILD_ID_BATT_MAX rejects values ≤ battMinMv.
+
+### Battery ADC Implementation Notes
+
+`readADC_U0()` uses direct STM32 HAL calls (bypasses `analogRead()`):
+- **STM32duino bug**: `analog.cpp` line ~1125 sets `AdcChannelConf.SamplingTime` to a raw cycle constant on STM32U0 (only `STM32G0xx` is excluded). On STM32U0, this field must be `ADC_SAMPLINGTIME_COMMON_1/2` — so `HAL_ADC_ConfigChannel()` fails silently and `analogRead()` returns 0.
+- **Destructive DR read**: Reading `ADC1->DR` directly (e.g., for diagnostics) before `HAL_ADC_GetValue()` consumes the conversion result — on STM32U0/G0/C0, reading DR clears EOC and empties the result register. Only read DR once via `HAL_ADC_GetValue()`.
+- **Calibration**: `HAL_ADCEx_Calibration_Start()` returns HAL_ERROR on STM32U0 — skipped. Factory trim (CALFACT) is loaded from OTP at power-on; no runtime calibration needed for battery monitoring.
+- **Channel mapping**: PA0 = ADC1_IN4 (channel 4) on STM32U083 LQFP64. PC0–PC3 are IN0–IN3, so channels are offset — PA0 is NOT IN0.
+- **Battery cutoff guard**: `batteryVoltage > 2.5f` prevents `sleep(0)` when running on USB only (PA0 reads ~0V when no battery is connected through the voltage divider).

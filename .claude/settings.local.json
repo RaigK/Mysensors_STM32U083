@@ -50,7 +50,18 @@
       "Bash(python3:*)",
       "Bash(grep -n \"DBG_STOP\\\\|DBG_SLEEP\\\\|DBG_STANDBY\\\\|DBGMCU_CR\\\\|CR_DBG\" \"C:/Users/raigk/.platformio/packages/framework-arduinoststm32/system/Drivers/STM32U0xx_HAL_Driver/Inc/stm32u0xx_hal_dbgmcu.h\" 2>/dev/null | head -20\ngrep -n \"DBG_STOP\\\\|DBGMCU\" \"C:/Users/raigk/.platformio/packages/framework-cmsis/CMSIS/Device/ST/STM32U0xx/Include/stm32u083xx.h\" 2>/dev/null | head -20)",
       "Bash(grep -n \"DBGMCU\\\\|DBG_STOP\\\\|DBG_SLEEP\\\\|debug\" \"C:/Users/raigk/.platformio/packages/framework-arduinoststm32/cores/arduino/stm32/stm32_def_build.h\" 2>/dev/null | head -10\ngrep -rn \"DBGMCU\\\\|DBG_STOP\" \"C:/Users/raigk/.platformio/packages/framework-arduinoststm32/cores/arduino/\" 2>/dev/null | head -10)",
-      "Bash(mode:*)"
+      "Bash(mode:*)",
+      "Bash(git merge *)",
+      "Bash(git stash *)",
+      "Bash(git checkout *)",
+      "Bash(git branch *)",
+      "Bash(git push *)",
+      "Bash(python *)",
+      "Bash(awk -F'\\\\t' 'NR>1 && $2+0 > 0.0005 {print NR, $1, $2}' current_log.tsv)",
+      "Bash(awk -F'\\\\t' 'NR>1 {print $1, $2}' current_log.tsv)",
+      "Bash(awk *)",
+      "Bash(\"C:/Users/raigk/.platformio/packages/toolchain-gccarmnoneeabi/bin/arm-none-eabi-nm.exe\" .pio/build/stm32u083_cube/firmware.elf)",
+      "Bash(\"C:/Users/raigk/.platformio/packages/toolchain-gccarmnoneeabi/bin/arm-none-eabi-objdump.exe\" -d --start-address=0x08003740 --stop-address=0x08003780 .pio/build/stm32u083_cube/firmware.elf)"
     ]
   }
 }
